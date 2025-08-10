@@ -1,9 +1,7 @@
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
-
-const prisma = new PrismaClient()
+import { query } from '../../../lib/database'
 
 export const authOptions = {
   providers: [
@@ -18,15 +16,16 @@ export const authOptions = {
           return null
         }
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email
-          }
-        })
+        const users = await query(
+          'SELECT * FROM users WHERE email = $1',
+          [credentials.email]
+        )
 
-        if (!user) {
+        if (users.length === 0) {
           return null
         }
+
+        const user = users[0]
 
         const isPasswordValid = await bcrypt.compare(
           credentials.password,

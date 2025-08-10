@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../auth/[...nextauth]'
-
-const prisma = new PrismaClient()
+import { query } from '../../../lib/database'
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions)
@@ -27,30 +25,21 @@ export default async function handler(req, res) {
 
 async function getPatient(req, res, id) {
   try {
-    const patient = await prisma.patient.findUnique({
-      where: { id: parseInt(id) },
-      include: {
-        appointments: {
-          include: {
-            doctor: true
-          },
-          orderBy: {
-            appointmentDate: 'desc'
-          }
-        }
-      }
-    })
-    
-    if (!patient) {
+    const patients = await query(
+      'SELECT * FROM patients WHERE id = $1',
+      [parseInt(id)]
+    )
+
+    if (patients.length === 0) {
       return res.status(404).json({ message: 'Patient not found' })
     }
-    
-    res.status(200).json(patient)
+
+    res.status(200).json(patients[0])
   } catch (error) {
+    console.error('Error fetching patient:', error)
     res.status(500).json({ message: 'Error fetching patient' })
   }
 }
-
 async function updatePatient(req, res, session, id) {
   // Only admins and receptionists can update patients
   if (!['admin', 'receptionist'].includes(session.user.role)) {
@@ -58,25 +47,76 @@ async function updatePatient(req, res, session, id) {
   }
 
   try {
-    const { name, email, phone, address, dateOfBirth, gender, bloodGroup, emergencyContact, medicalHistory } = req.body
+    const { name, email, phone, address, date_of_birth, gender, blood_group, emergency_contact, medical_history } = req.body
     
-    const updateData = {}
-    if (name) updateData.name = name
-    if (email !== undefined) updateData.email = email
-    if (phone) updateData.phone = phone
-    if (address) updateData.address = address
-    if (dateOfBirth) updateData.dateOfBirth = new Date(dateOfBirth)
-    if (gender) updateData.gender = gender
-    if (bloodGroup !== undefined) updateData.bloodGroup = bloodGroup
-    if (emergencyContact) updateData.emergencyContact = emergencyContact
-    if (medicalHistory !== undefined) updateData.medicalHistory = medicalHistory
+    let updateQuery = 'UPDATE patients SET updated_at = NOW()'
+    let params = []
+    let paramIndex = 1
     
-    const patient = await prisma.patient.update({
-      where: { id: parseInt(id) },
-      data: updateData
-    })
+    if (name) {
+      updateQuery += `, name = $${paramIndex}`
+      params.push(name)
+      paramIndex++
+    }
     
-    res.status(200).json(patient)
+    if (email !== undefined) {
+      updateQuery += `, email = $${paramIndex}`
+      params.push(email)
+      paramIndex++
+    }
+    
+    if (phone) {
+      updateQuery += `, phone = $${paramIndex}`
+      params.push(phone)
+      paramIndex++
+    }
+    
+    if (address) {
+      updateQuery += `, address = $${paramIndex}`
+      params.push(address)
+      paramIndex++
+    }
+    
+    if (date_of_birth) {
+      updateQuery += `, date_of_birth = $${paramIndex}`
+      params.push(date_of_birth)
+      paramIndex++
+    }
+    
+    if (gender) {
+      updateQuery += `, gender = $${paramIndex}`
+      params.push(gender)
+      paramIndex++
+    }
+    
+    if (blood_group !== undefined) {
+      updateQuery += `, blood_group = $${paramIndex}`
+      params.push(blood_group)
+      paramIndex++
+    }
+    
+    if (emergency_contact) {
+      updateQuery += `, emergency_contact = $${paramIndex}`
+      params.push(emergency_contact)
+      paramIndex++
+    }
+    
+    if (medical_history !== undefined) {
+      updateQuery += `, medical_history = $${paramIndex}`
+      params.push(medical_history)
+      paramIndex++
+    }
+    
+    updateQuery += ` WHERE id = $${paramIndex} RETURNING *`
+    params.push(parseInt(id))
+    
+    const patients = await query(updateQuery, params)
+    
+    if (patients.length === 0) {
+      return res.status(404).json({ message: 'Patient not found' })
+    }
+    
+    res.status(200).json(patients[0])
   } catch (error) {
     console.error('Error updating patient:', error)
     res.status(500).json({ message: 'Error updating patient' })
@@ -90,9 +130,14 @@ async function deletePatient(req, res, session, id) {
   }
 
   try {
-    await prisma.patient.delete({
-      where: { id: parseInt(id) }
-    })
+    const result = await query(
+      'DELETE FROM patients WHERE id = $1 RETURNING id',
+      [parseInt(id)]
+    )
+    
+    if (result.length === 0) {
+      return res.status(404).json({ message: 'Patient not found' })
+    }
     
     res.status(200).json({ message: 'Patient deleted successfully' })
   } catch (error) {
@@ -100,3 +145,5 @@ async function deletePatient(req, res, session, id) {
     res.status(500).json({ message: 'Error deleting patient' })
   }
 }
+
+

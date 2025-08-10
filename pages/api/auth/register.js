@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from './[...nextauth]'
 import bcrypt from 'bcryptjs'
-
-const prisma = new PrismaClient()
+import { query } from '../../../lib/database'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -29,11 +27,12 @@ export default async function handler(req, res) {
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    })
+    const existingUsers = await query(
+      'SELECT id FROM users WHERE email = $1',
+      [email]
+    )
 
-    if (existingUser) {
+    if (existingUsers.length > 0) {
       return res.status(400).json({ message: 'User already exists' })
     }
 
@@ -41,21 +40,12 @@ export default async function handler(req, res) {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     // Create user
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        role
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true
-      }
-    })
+    const users = await query(
+      'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, created_at',
+      [name, email, hashedPassword, role]
+    )
+
+    const user = users[0]
 
     res.status(201).json({ message: 'User created successfully', user })
   } catch (error) {

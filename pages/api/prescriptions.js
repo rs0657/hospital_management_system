@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from './auth/[...nextauth]'
-
-const prisma = new PrismaClient()
+import { query } from '../../lib/database'
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions)
@@ -27,31 +25,53 @@ export default async function handler(req, res) {
 
 async function getPrescriptions(req, res, session) {
   try {
-    let whereClause = {}
+    let sqlQuery = `
+      SELECT p.*, 
+             pt.name as patient_name, pt.email as patient_email, pt.phone as patient_phone,
+             d.name as doctor_name, d.specialty as doctor_specialty, d.phone as doctor_phone
+      FROM prescriptions p
+      LEFT JOIN patients pt ON p.patient_id = pt.id
+      LEFT JOIN doctors d ON p.doctor_id = d.id
+    `
+    let params = []
     
     // Doctors can only see their own prescriptions
     if (session.user.role === 'doctor') {
-      const doctor = await prisma.doctor.findFirst({
-        where: { name: session.user.name }
-      })
-      
-      if (doctor) {
-        whereClause = { doctorId: doctor.id }
+      const doctors = await query('SELECT id FROM doctors WHERE name = $1', [session.user.name])
+      if (doctors.length > 0) {
+        sqlQuery += ' WHERE p.doctor_id = $1'
+        params = [doctors[0].id]
       }
     }
 
-    const prescriptions = await prisma.prescription.findMany({
-      where: whereClause,
-      include: {
-        patient: true,
-        doctor: true
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
+    sqlQuery += ' ORDER BY p.created_at DESC'
+
+    const prescriptions = await query(sqlQuery, params)
     
-    res.status(200).json({ prescriptions })
+    // Transform the data to match frontend expectations
+    const transformedPrescriptions = prescriptions.map(presc => ({
+      id: presc.id,
+      diagnosis: presc.diagnosis,
+      medications: presc.medications,
+      frequency: presc.frequency,
+      notes: presc.notes,
+      created_at: presc.created_at,
+      updated_at: presc.updated_at,
+      patient: {
+        id: presc.patient_id,
+        name: presc.patient_name,
+        email: presc.patient_email,
+        phone: presc.patient_phone
+      },
+      doctor: {
+        id: presc.doctor_id,
+        name: presc.doctor_name,
+        specialty: presc.doctor_specialty,
+        phone: presc.doctor_phone
+      }
+    }))
+    
+    res.status(200).json({ prescriptions: transformedPrescriptions })
   } catch (error) {
     console.error('Error fetching prescriptions:', error)
     res.status(500).json({ message: 'Error fetching prescriptions' })
@@ -71,31 +91,10 @@ async function createPrescription(req, res, session) {
     
     // If no doctorId provided and user is a doctor, use their ID
     if (!finalDoctorId && session.user.role === 'doctor') {
-      // Try to find doctor by name first
-      let doctor = await prisma.doctor.findFirst({
-        where: { name: session.user.name }
-      })
+      const doctors = await query('SELECT id FROM doctors WHERE name = $1', [session.user.name])
       
-      // If not found by name, try mapping by user email to doctor email pattern
-      if (!doctor) {
-        // Map user emails to doctor emails
-        const emailMapping = {
-          'doctor1@hospital.com': 'dr.rajesh.reddy@hospital.com',
-          'doctor2@hospital.com': 'dr.priya.nair@hospital.com', 
-          'doctor3@hospital.com': 'dr.arjun.menon@hospital.com',
-          'doctor4@hospital.com': 'dr.kavya.iyer@hospital.com'
-        }
-        
-        const doctorEmail = emailMapping[session.user.email]
-        if (doctorEmail) {
-          doctor = await prisma.doctor.findFirst({
-            where: { email: doctorEmail }
-          })
-        }
-      }
-      
-      if (doctor) {
-        finalDoctorId = doctor.id
+      if (doctors.length > 0) {
+        finalDoctorId = doctors[0].id
       } else {
         return res.status(400).json({ 
           message: 'Doctor profile not found. Please contact administrator.',
@@ -109,36 +108,46 @@ async function createPrescription(req, res, session) {
     
     // If doctor, verify they are creating their own prescription
     if (session.user.role === 'doctor') {
-      const doctor = await prisma.doctor.findFirst({
-        where: { 
-          OR: [
-            { name: session.user.name },
-            { id: parseInt(finalDoctorId) }
-          ]
-        }
-      })
+      const doctors = await query('SELECT id FROM doctors WHERE name = $1', [session.user.name])
       
-      if (doctor && doctor.id !== parseInt(finalDoctorId)) {
+      if (doctors.length > 0 && doctors[0].id !== parseInt(finalDoctorId)) {
         return res.status(403).json({ message: 'Forbidden: Can only create your own prescriptions' })
       }
     }
     
-    const prescription = await prisma.prescription.create({
-      data: {
-        patientId: parseInt(patientId),
-        doctorId: parseInt(finalDoctorId),
-        diagnosis,
-        medications: JSON.stringify(medications),
-        frequency: frequency || 'As prescribed', // Default value if not provided
-        notes: notes || ''
-      },
-      include: {
-        patient: true,
-        doctor: true
-      }
-    })
+    const prescriptions = await query(
+      'INSERT INTO prescriptions (patient_id, doctor_id, diagnosis, medications, frequency, notes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [parseInt(patientId), parseInt(finalDoctorId), diagnosis, JSON.stringify(medications), frequency || 'As prescribed', notes || '']
+    )
     
-    res.status(201).json(prescription)
+    // Get complete prescription data
+    const fullPrescription = await query(`
+      SELECT p.*, 
+             pt.name as patient_name, pt.email as patient_email, pt.phone as patient_phone,
+             d.name as doctor_name, d.specialty as doctor_specialty, d.phone as doctor_phone
+      FROM prescriptions p
+      LEFT JOIN patients pt ON p.patient_id = pt.id
+      LEFT JOIN doctors d ON p.doctor_id = d.id
+      WHERE p.id = $1
+    `, [prescriptions[0].id])
+    
+    const transformedPrescription = {
+      ...prescriptions[0],
+      patient: {
+        id: prescriptions[0].patient_id,
+        name: fullPrescription[0].patient_name,
+        email: fullPrescription[0].patient_email,
+        phone: fullPrescription[0].patient_phone
+      },
+      doctor: {
+        id: prescriptions[0].doctor_id,
+        name: fullPrescription[0].doctor_name,
+        specialty: fullPrescription[0].doctor_specialty,
+        phone: fullPrescription[0].doctor_phone
+      }
+    }
+    
+    res.status(201).json(transformedPrescription)
   } catch (error) {
     console.error('Error creating prescription:', error)
     console.error('Request body:', req.body)
@@ -163,40 +172,85 @@ async function updatePrescription(req, res, session) {
     
     // If doctor, verify they own the prescription
     if (session.user.role === 'doctor') {
-      const doctor = await prisma.doctor.findFirst({
-        where: { name: session.user.name }
-      })
+      const doctors = await query('SELECT id FROM doctors WHERE name = $1', [session.user.name])
       
-      if (doctor) {
-        const prescription = await prisma.prescription.findFirst({
-          where: { 
-            id: parseInt(id),
-            doctorId: doctor.id
-          }
-        })
+      if (doctors.length > 0) {
+        const prescriptions = await query(
+          'SELECT id FROM prescriptions WHERE id = $1 AND doctor_id = $2',
+          [parseInt(id), doctors[0].id]
+        )
         
-        if (!prescription) {
+        if (prescriptions.length === 0) {
           return res.status(403).json({ message: 'Forbidden' })
         }
       }
     }
     
-    const updateData = {}
-    if (diagnosis) updateData.diagnosis = diagnosis
-    if (medications) updateData.medications = JSON.stringify(medications)
-    if (frequency) updateData.frequency = frequency
-    if (notes !== undefined) updateData.notes = notes
+    let updateQuery = 'UPDATE prescriptions SET updated_at = NOW()'
+    let params = []
+    let paramIndex = 1
     
-    const prescription = await prisma.prescription.update({
-      where: { id: parseInt(id) },
-      data: updateData,
-      include: {
-        patient: true,
-        doctor: true
+    if (diagnosis) {
+      updateQuery += `, diagnosis = $${paramIndex}`
+      params.push(diagnosis)
+      paramIndex++
+    }
+    
+    if (medications) {
+      updateQuery += `, medications = $${paramIndex}`
+      params.push(JSON.stringify(medications))
+      paramIndex++
+    }
+    
+    if (frequency) {
+      updateQuery += `, frequency = $${paramIndex}`
+      params.push(frequency)
+      paramIndex++
+    }
+    
+    if (notes !== undefined) {
+      updateQuery += `, notes = $${paramIndex}`
+      params.push(notes)
+      paramIndex++
+    }
+    
+    updateQuery += ` WHERE id = $${paramIndex} RETURNING *`
+    params.push(parseInt(id))
+    
+    const prescriptions = await query(updateQuery, params)
+    
+    if (prescriptions.length === 0) {
+      return res.status(404).json({ message: 'Prescription not found' })
+    }
+    
+    // Get complete prescription data
+    const fullPrescription = await query(`
+      SELECT p.*, 
+             pt.name as patient_name, pt.email as patient_email, pt.phone as patient_phone,
+             d.name as doctor_name, d.specialty as doctor_specialty, d.phone as doctor_phone
+      FROM prescriptions p
+      LEFT JOIN patients pt ON p.patient_id = pt.id
+      LEFT JOIN doctors d ON p.doctor_id = d.id
+      WHERE p.id = $1
+    `, [prescriptions[0].id])
+    
+    const transformedPrescription = {
+      ...prescriptions[0],
+      patient: {
+        id: prescriptions[0].patient_id,
+        name: fullPrescription[0].patient_name,
+        email: fullPrescription[0].patient_email,
+        phone: fullPrescription[0].patient_phone
+      },
+      doctor: {
+        id: prescriptions[0].doctor_id,
+        name: fullPrescription[0].doctor_name,
+        specialty: fullPrescription[0].doctor_specialty,
+        phone: fullPrescription[0].doctor_phone
       }
-    })
+    }
     
-    res.status(200).json(prescription)
+    res.status(200).json(transformedPrescription)
   } catch (error) {
     console.error('Error updating prescription:', error)
     res.status(500).json({ message: 'Error updating prescription' })
@@ -212,9 +266,14 @@ async function deletePrescription(req, res, session) {
   try {
     const { id } = req.query
     
-    await prisma.prescription.delete({
-      where: { id: parseInt(id) }
-    })
+    const result = await query(
+      'DELETE FROM prescriptions WHERE id = $1 RETURNING id',
+      [parseInt(id)]
+    )
+    
+    if (result.length === 0) {
+      return res.status(404).json({ message: 'Prescription not found' })
+    }
     
     res.status(200).json({ message: 'Prescription deleted successfully' })
   } catch (error) {
