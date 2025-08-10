@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  name     String
+  email    String  @unique
+  password String
+  role     String  // 'admin', 'doctor', 'receptionist'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Patient {
+  id          Int      @id @default(autoincrement())
+  name        String
+  dob         DateTime
+  gender      String
+  phone       String
+  address     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  appointments Appointment[]
+  billing     Billing[]
+}
+
+model Doctor {
+  id          Int      @id @default(autoincrement())
+  name        String
+  specialty   String
+  phone       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  appointments Appointment[]
+}
+
+model Appointment {
+  id          Int      @id @default(autoincrement())
+  patientId   Int
+  doctorId    Int
+  appointmentDate DateTime
+  status      String   @default("scheduled")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  prescriptions Prescription[]
+  patient     Patient @relation(fields: [patientId], references: [id])
+  doctor      Doctor @relation(fields: [doctorId], references: [id])
+}
+
+model Prescription {
+  id          Int      @id @default(autoincrement())
+  appointmentId Int
+  medicineName String
+  dosage      String
+  duration    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+}
+
+model Billing {
+  id          Int      @id @default(autoincrement())
+  patientId   Int
+  amount      Float
+  paymentStatus String @default("pending")
+  billDate    DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  patient     Patient @relation(fields: [patientId], references: [id])
+}
