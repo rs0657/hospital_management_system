@@ -71,21 +71,51 @@ async function createPrescription(req, res, session) {
     
     // If no doctorId provided and user is a doctor, use their ID
     if (!finalDoctorId && session.user.role === 'doctor') {
-      const doctor = await prisma.doctor.findFirst({
+      // Try to find doctor by name first
+      let doctor = await prisma.doctor.findFirst({
         where: { name: session.user.name }
       })
+      
+      // If not found by name, try mapping by user email to doctor email pattern
+      if (!doctor) {
+        // Map user emails to doctor emails
+        const emailMapping = {
+          'doctor1@hospital.com': 'dr.john.smith@hospital.com',
+          'doctor2@hospital.com': 'dr.sarah.johnson@hospital.com', 
+          'doctor3@hospital.com': 'dr.michael.brown@hospital.com',
+          'doctor4@hospital.com': 'dr.emily.davis@hospital.com'
+        }
+        
+        const doctorEmail = emailMapping[session.user.email]
+        if (doctorEmail) {
+          doctor = await prisma.doctor.findFirst({
+            where: { email: doctorEmail }
+          })
+        }
+      }
       
       if (doctor) {
         finalDoctorId = doctor.id
       } else {
-        return res.status(400).json({ message: 'Doctor not found' })
+        return res.status(400).json({ 
+          message: 'Doctor profile not found. Please contact administrator.',
+          debug: {
+            userName: session.user.name,
+            userEmail: session.user.email
+          }
+        })
       }
     }
     
     // If doctor, verify they are creating their own prescription
     if (session.user.role === 'doctor') {
       const doctor = await prisma.doctor.findFirst({
-        where: { name: session.user.name }
+        where: { 
+          OR: [
+            { name: session.user.name },
+            { id: parseInt(finalDoctorId) }
+          ]
+        }
       })
       
       if (doctor && doctor.id !== parseInt(finalDoctorId)) {
@@ -99,7 +129,7 @@ async function createPrescription(req, res, session) {
         doctorId: parseInt(finalDoctorId),
         diagnosis,
         medications: JSON.stringify(medications),
-        frequency,
+        frequency: frequency || 'As prescribed', // Default value if not provided
         notes: notes || ''
       },
       include: {
@@ -111,7 +141,13 @@ async function createPrescription(req, res, session) {
     res.status(201).json(prescription)
   } catch (error) {
     console.error('Error creating prescription:', error)
-    res.status(500).json({ message: 'Error creating prescription' })
+    console.error('Request body:', req.body)
+    console.error('Session user:', session.user)
+    res.status(500).json({ 
+      message: 'Error creating prescription',
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    })
   }
 }
 
