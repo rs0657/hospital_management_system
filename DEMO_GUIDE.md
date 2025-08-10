@@ -11,10 +11,10 @@ A comprehensive hospital management system built with Next.js, featuring patient
 - **Access:** Full system access
 
 ### Doctor Accounts
-- **डॉ. अमित शर्मा (Dr. Amit Sharma):** doctor1@hospital.com / password123
-- **डॉ. प्रिया पटेल (Dr. Priya Patel):** doctor2@hospital.com / password123  
-- **डॉ. राहुल गुप्ता (Dr. Rahul Gupta):** doctor3@hospital.com / password123
-- **डॉ. आदित्या सिंह (Dr. Aditya Singh):** doctor4@hospital.com / password123
+- **Dr. Rajesh Reddy:** doctor1@hospital.com / password123
+- **Dr. Priya Nair:** doctor2@hospital.com / password123  
+- **Dr. Arjun Menon:** doctor3@hospital.com / password123
+- **Dr. Kavya Iyer:** doctor4@hospital.com / password123
 
 ### Receptionist
 - **Username:** receptionist@hospital.com
