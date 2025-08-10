@@ -38,6 +38,7 @@ database.db*
 *.db-wal
 prisma/dev.db*
 prisma/*.db
+# NOTE: Prisma has been removed - migrated to direct PostgreSQL queries
 
 # API Keys and secrets
 secrets/
