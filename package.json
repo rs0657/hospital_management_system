@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:seed": "node prisma/seed.js"
+    "db:seed": "node prisma/seed.js",
+    "postbuild": "npx prisma generate",
+    "vercel-build": "npx prisma generate && npx prisma db push && npm run build"
   },
   "dependencies": {
     "@prisma/client": "^6.13.0",
