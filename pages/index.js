@@ -302,7 +302,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="font-semibold text-gray-900">New patient registered</p>
-                <p className="text-sm text-gray-600">John Doe was added to the system</p>
+                <p className="text-sm text-gray-600">राहुल कुमार (Rahul Kumar) was added to the system</p>
               </div>
               <span className="text-xs text-gray-500 ml-auto">5 min ago</span>
             </div>
@@ -312,7 +312,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="font-semibold text-gray-900">Appointment scheduled</p>
-                <p className="text-sm text-gray-600">Dr. Smith with Jane Wilson</p>
+                <p className="text-sm text-gray-600">डॉ. अमित शर्मा (Dr. Amit Sharma) with सुनीता देवी (Sunita Devi)</p>
               </div>
               <span className="text-xs text-gray-500 ml-auto">12 min ago</span>
             </div>

@@ -80,10 +80,10 @@ async function createPrescription(req, res, session) {
       if (!doctor) {
         // Map user emails to doctor emails
         const emailMapping = {
-          'doctor1@hospital.com': 'dr.john.smith@hospital.com',
-          'doctor2@hospital.com': 'dr.sarah.johnson@hospital.com', 
-          'doctor3@hospital.com': 'dr.michael.brown@hospital.com',
-          'doctor4@hospital.com': 'dr.emily.davis@hospital.com'
+          'doctor1@hospital.com': 'dr.amit.sharma@hospital.com',
+          'doctor2@hospital.com': 'dr.priya.patel@hospital.com', 
+          'doctor3@hospital.com': 'dr.rahul.gupta@hospital.com',
+          'doctor4@hospital.com': 'dr.aditya.singh@hospital.com'
         }
         
         const doctorEmail = emailMapping[session.user.email]

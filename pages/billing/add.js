@@ -147,7 +147,7 @@ export default function AddBilling() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
-                    Amount ($) *
+                    Amount (₹) *
                   </label>
                   <input
                     id="amount"

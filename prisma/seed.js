@@ -17,7 +17,7 @@ async function main() {
   
   const admin = await prisma.user.create({
     data: {
-      name: 'Admin User',
+      name: 'राम कुमार (Ram Kumar)',
       email: 'admin@hospital.com',
       password: hashedPassword,
       role: 'admin',
@@ -26,7 +26,7 @@ async function main() {
 
   const doctor1 = await prisma.user.create({
     data: {
-      name: 'Dr. John Smith',
+      name: 'डॉ. अमित शर्मा (Dr. Amit Sharma)',
       email: 'doctor1@hospital.com',
       password: hashedPassword,
       role: 'doctor',
@@ -35,7 +35,7 @@ async function main() {
 
   const doctor2 = await prisma.user.create({
     data: {
-      name: 'Dr. Sarah Johnson',
+      name: 'डॉ. प्रिया पटेल (Dr. Priya Patel)',
       email: 'doctor2@hospital.com',
       password: hashedPassword,
       role: 'doctor',
@@ -44,7 +44,7 @@ async function main() {
 
   const doctor3 = await prisma.user.create({
     data: {
-      name: 'Dr. Michael Brown',
+      name: 'डॉ. राहुल गुप्ता (Dr. Rahul Gupta)',
       email: 'doctor3@hospital.com',
       password: hashedPassword,
       role: 'doctor',
@@ -53,7 +53,7 @@ async function main() {
 
   const doctor4 = await prisma.user.create({
     data: {
-      name: 'Dr. Emily Davis',
+      name: 'डॉ. आदित्या सिंह (Dr. Aditya Singh)',
       email: 'doctor4@hospital.com',
       password: hashedPassword,
       role: 'doctor',
@@ -62,7 +62,7 @@ async function main() {
 
   const receptionist = await prisma.user.create({
     data: {
-      name: 'Jane Doe',
+      name: 'अंजलि वर्मा (Anjali Verma)',
       email: 'receptionist@hospital.com',
       password: hashedPassword,
       role: 'receptionist',
@@ -72,9 +72,9 @@ async function main() {
   // Create doctors
   const doctorRecord1 = await prisma.doctor.create({
     data: {
-      name: 'Dr. John Smith',
-      email: 'dr.john.smith@hospital.com',
-      phone: '+1-555-0101',
+      name: 'डॉ. अमित शर्मा (Dr. Amit Sharma)',
+      email: 'dr.amit.sharma@hospital.com',
+      phone: '+91-9876543210',
       specialization: 'Cardiology',
       experience: 15,
       qualification: 'MBBS, MD (Cardiology)',
@@ -83,9 +83,9 @@ async function main() {
 
   const doctorRecord2 = await prisma.doctor.create({
     data: {
-      name: 'Dr. Sarah Johnson',
-      email: 'dr.sarah.johnson@hospital.com',
-      phone: '+1-555-0102',
+      name: 'डॉ. प्रिया पटेल (Dr. Priya Patel)',
+      email: 'dr.priya.patel@hospital.com',
+      phone: '+91-9876543211',
       specialization: 'Pediatrics',
       experience: 10,
       qualification: 'MBBS, MD (Pediatrics)',
@@ -94,9 +94,9 @@ async function main() {
 
   const doctorRecord3 = await prisma.doctor.create({
     data: {
-      name: 'Dr. Michael Brown',
-      email: 'dr.michael.brown@hospital.com',
-      phone: '+1-555-0103',
+      name: 'डॉ. राहुल गुप्ता (Dr. Rahul Gupta)',
+      email: 'dr.rahul.gupta@hospital.com',
+      phone: '+91-9876543212',
       specialization: 'Orthopedics',
       experience: 12,
       qualification: 'MBBS, MS (Orthopedics)',
@@ -105,9 +105,9 @@ async function main() {
 
   const doctorRecord4 = await prisma.doctor.create({
     data: {
-      name: 'Dr. Emily Davis',
-      email: 'dr.emily.davis@hospital.com',
-      phone: '+1-555-0104',
+      name: 'डॉ. आदित्या सिंह (Dr. Aditya Singh)',
+      email: 'dr.aditya.singh@hospital.com',
+      phone: '+91-9876543213',
       specialization: 'Dermatology',
       experience: 8,
       qualification: 'MBBS, MD (Dermatology)',
@@ -117,43 +117,43 @@ async function main() {
   // Create patients
   const patient1 = await prisma.patient.create({
     data: {
-      name: 'Alice Williams',
-      email: 'alice.williams@email.com',
-      phone: '+1-555-0201',
-      address: '123 Main St, City, State 12345',
+      name: 'आशा शर्मा (Asha Sharma)',
+      email: 'asha.sharma@email.com',
+      phone: '+91-9123456789',
+      address: '123 गुरु द्वारा मार्ग, दिल्ली - 110001',
       dateOfBirth: new Date('1985-03-15'),
       gender: 'Female',
       bloodGroup: 'A+',
-      emergencyContact: '+1-555-0301',
-      medicalHistory: 'No known allergies, previous surgery in 2020',
+      emergencyContact: '+91-9123456790',
+      medicalHistory: 'कोई ज्ञात एलर्जी नहीं, 2020 में सर्जरी',
     },
   });
 
   const patient2 = await prisma.patient.create({
     data: {
-      name: 'Bob Johnson',
-      email: 'bob.johnson@email.com',
-      phone: '+1-555-0202',
-      address: '456 Oak Ave, City, State 12345',
+      name: 'राजेश कुमार (Rajesh Kumar)',
+      email: 'rajesh.kumar@email.com',
+      phone: '+91-9123456791',
+      address: '456 गांधी नगर, मुंबई - 400001',
       dateOfBirth: new Date('1978-07-22'),
       gender: 'Male',
       bloodGroup: 'B+',
-      emergencyContact: '+1-555-0302',
-      medicalHistory: 'Diabetic, takes regular medication',
+      emergencyContact: '+91-9123456792',
+      medicalHistory: 'मधुमेह, नियमित दवा लेते हैं',
     },
   });
 
   const patient3 = await prisma.patient.create({
     data: {
-      name: 'Carol Davis',
-      email: 'carol.davis@email.com',
-      phone: '+1-555-0203',
-      address: '789 Pine Rd, City, State 12345',
+      name: 'सुनीता देवी (Sunita Devi)',
+      email: 'sunita.devi@email.com',
+      phone: '+91-9123456793',
+      address: '789 नेहरू कॉलोनी, कोलकाता - 700001',
       dateOfBirth: new Date('1992-11-08'),
       gender: 'Female',
       bloodGroup: 'O-',
-      emergencyContact: '+1-555-0303',
-      medicalHistory: 'Healthy, no known medical conditions',
+      emergencyContact: '+91-9123456794',
+      medicalHistory: 'स्वस्थ, कोई ज्ञात चिकित्सा समस्या नहीं',
     },
   });
 
@@ -181,18 +181,18 @@ async function main() {
     data: {
       patientId: patient1.id,
       doctorId: doctorRecord1.id,
-      diagnosis: 'Common Cold',
+      diagnosis: 'सामान्य सर्दी (Common Cold)',
       medications: JSON.stringify([
         {
           name: 'Amoxicillin',
           dosage: '500mg',
-          frequency: 'Three times daily',
-          duration: '7 days',
-          instructions: 'Take after meals'
+          frequency: 'दिन में तीन बार (Three times daily)',
+          duration: '7 दिन (7 days)',
+          instructions: 'भोजन के बाद लें (Take after meals)'
         }
       ]),
-      frequency: 'Three times daily',
-      notes: 'Rest and plenty of fluids',
+      frequency: 'दिन में तीन बार (Three times daily)',
+      notes: 'आराम करें और पर्याप्त तरल पदार्थ लें',
     },
   });
 
@@ -200,7 +200,7 @@ async function main() {
   await prisma.billing.create({
     data: {
       patientId: patient1.id,
-      amount: 150.00,
+      amount: 1500.00,
       paymentStatus: 'pending',
       billDate: new Date(),
     },
@@ -209,7 +209,7 @@ async function main() {
   await prisma.billing.create({
     data: {
       patientId: patient2.id,
-      amount: 200.00,
+      amount: 2000.00,
       paymentStatus: 'paid',
       billDate: new Date(),
     },
