@@ -37,7 +37,7 @@ async function getPatients(req, res, session) {
         billing: true
       }
     })
-    res.status(200).json(patients)
+    res.status(200).json({ patients })
   } catch (error) {
     res.status(500).json({ message: 'Error fetching patients' })
   }

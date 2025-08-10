@@ -148,13 +148,14 @@ export default function Billing() {
     try {
       const response = await fetch('/api/billing')
       const data = await response.json()
-      setBills(data)
+      const billsData = data.billing || []
+      setBills(billsData)
       
       // Calculate stats
-      const total = data.reduce((sum, bill) => sum + bill.total_amount, 0)
-      const paid = data.filter(bill => bill.status === 'paid').reduce((sum, bill) => sum + bill.total_amount, 0)
-      const pending = data.filter(bill => bill.status === 'pending').reduce((sum, bill) => sum + bill.total_amount, 0)
-      const overdue = data.filter(bill => bill.status === 'overdue').reduce((sum, bill) => sum + bill.total_amount, 0)
+      const total = billsData.reduce((sum, bill) => sum + bill.amount, 0)
+      const paid = billsData.filter(bill => bill.paymentStatus === 'paid').reduce((sum, bill) => sum + bill.amount, 0)
+      const pending = billsData.filter(bill => bill.paymentStatus === 'pending').reduce((sum, bill) => sum + bill.amount, 0)
+      const overdue = billsData.filter(bill => bill.paymentStatus === 'overdue').reduce((sum, bill) => sum + bill.amount, 0)
       
       setStats({ total, paid, pending, overdue })
     } catch (error) {
@@ -166,8 +167,8 @@ export default function Billing() {
 
   const filteredBills = bills.filter(bill => {
     const matchesSearch = bill.patient?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         bill.invoice_number.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = !statusFilter || bill.status === statusFilter
+                         bill.id.toString().includes(searchTerm.toLowerCase())
+    const matchesStatus = !statusFilter || bill.paymentStatus === statusFilter
     return matchesSearch && matchesStatus
   })
 
@@ -189,12 +190,12 @@ export default function Billing() {
     return icons[status] || '💰'
   }
 
-  const updateBillStatus = async (id, status) => {
+  const updateBillStatus = async (id, paymentStatus) => {
     try {
       const response = await fetch(`/api/billing/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ paymentStatus })
       })
       if (response.ok) {
         fetchBills()
@@ -342,39 +343,39 @@ export default function Billing() {
               <div className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
                   <div className="flex items-center space-x-4">
-                    <div className={`w-16 h-16 bg-gradient-to-r ${getStatusColor(bill.status)} rounded-xl flex items-center justify-center shadow-lg`}>
+                    <div className={`w-16 h-16 bg-gradient-to-r ${getStatusColor(bill.paymentStatus)} rounded-xl flex items-center justify-center shadow-lg`}>
                       <span className="text-white text-2xl">
-                        {getStatusIcon(bill.status)}
+                        {getStatusIcon(bill.paymentStatus)}
                       </span>
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">
                         {bill.patient?.name}
                       </h3>
-                      <p className="text-sm text-gray-600">Invoice: {bill.invoice_number}</p>
+                      <p className="text-sm text-gray-600">Bill ID: #{bill.id}</p>
                       <div className="flex items-center space-x-4 mt-2">
                         <div className="flex items-center space-x-1 text-sm text-gray-500">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a4 4 0 118 0v4m-4 8a3 3 0 100-6 3 3 0 000 6z" />
                           </svg>
-                          <span>{formatDate(bill.date)}</span>
+                          <span>{formatDate(bill.billDate)}</span>
                         </div>
                         <div className="flex items-center space-x-1 text-sm text-gray-500">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                           </svg>
-                          <span className="font-semibold">{formatCurrency(bill.total_amount)}</span>
+                          <span className="font-semibold">{formatCurrency(bill.amount)}</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center space-x-3">
-                    <div className={`px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${getStatusColor(bill.status)} text-white`}>
-                      {bill.status.toUpperCase()}
+                    <div className={`px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${getStatusColor(bill.paymentStatus)} text-white`}>
+                      {bill.paymentStatus?.toUpperCase() || 'PENDING'}
                     </div>
                     
-                    {bill.status === 'pending' && (
+                    {bill.paymentStatus === 'pending' && (
                       <div className="flex space-x-2">
                         <button
                           onClick={() => updateBillStatus(bill.id, 'paid')}
@@ -402,18 +403,12 @@ export default function Billing() {
                   </div>
                 </div>
 
-                {/* Services breakdown */}
-                {bill.services && bill.services.length > 0 && (
+                {/* Description */}
+                {bill.description && (
                   <div className="mt-4 pt-4 border-t border-gray-100">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {bill.services.map((service, index) => (
-                        <div key={index} className="flex justify-between items-center bg-gray-50 rounded-lg p-3">
-                          <span className="text-sm text-gray-700">{service}</span>
-                          <span className="text-sm font-semibold text-gray-900">
-                            {bill.amounts && formatCurrency(bill.amounts[index])}
-                          </span>
-                        </div>
-                      ))}
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <span className="text-sm font-medium text-gray-700">Description:</span>
+                      <p className="text-sm text-gray-600 mt-1">{bill.description}</p>
                     </div>
                   </div>
                 )}

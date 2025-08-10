@@ -42,6 +42,24 @@ async function main() {
     },
   });
 
+  const doctor3 = await prisma.user.create({
+    data: {
+      name: 'Dr. Michael Brown',
+      email: 'doctor3@hospital.com',
+      password: hashedPassword,
+      role: 'doctor',
+    },
+  });
+
+  const doctor4 = await prisma.user.create({
+    data: {
+      name: 'Dr. Emily Davis',
+      email: 'doctor4@hospital.com',
+      password: hashedPassword,
+      role: 'doctor',
+    },
+  });
+
   const receptionist = await prisma.user.create({
     data: {
       name: 'Jane Doe',
@@ -82,6 +100,17 @@ async function main() {
       specialization: 'Orthopedics',
       experience: 12,
       qualification: 'MBBS, MS (Orthopedics)',
+    },
+  });
+
+  const doctorRecord4 = await prisma.doctor.create({
+    data: {
+      name: 'Dr. Emily Davis',
+      email: 'dr.emily.davis@hospital.com',
+      phone: '+1-555-0104',
+      specialization: 'Dermatology',
+      experience: 8,
+      qualification: 'MBBS, MD (Dermatology)',
     },
   });
 

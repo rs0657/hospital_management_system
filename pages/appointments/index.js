@@ -142,7 +142,7 @@ export default function Appointments() {
     try {
       const response = await fetch('/api/appointments')
       const data = await response.json()
-      setAppointments(data)
+      setAppointments(data.appointments || [])
     } catch (error) {
       console.error('Error fetching appointments:', error)
     } finally {
@@ -152,7 +152,7 @@ export default function Appointments() {
 
   const filteredAppointments = appointments.filter(appointment => {
     const matchesStatus = !statusFilter || appointment.status === statusFilter
-    const matchesDate = !dateFilter || new Date(appointment.date).toDateString() === new Date(dateFilter).toDateString()
+    const matchesDate = !dateFilter || new Date(appointment.appointmentDate).toDateString() === new Date(dateFilter).toDateString()
     return matchesStatus && matchesDate
   })
 
@@ -189,14 +189,6 @@ export default function Appointments() {
     } catch (error) {
       console.error('Error updating appointment:', error)
     }
-  }
-
-  const formatTime = (timeString) => {
-    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    })
   }
 
   const formatDate = (dateString) => {
@@ -291,19 +283,19 @@ export default function Appointments() {
                       <h3 className="text-lg font-semibold text-gray-900">
                         {appointment.patient?.name} → {appointment.doctor?.name}
                       </h3>
-                      <p className="text-sm text-gray-600">{appointment.doctor?.specialty}</p>
+                      <p className="text-sm text-gray-600">{appointment.doctor?.specialization}</p>
                       <div className="flex items-center space-x-4 mt-2">
                         <div className="flex items-center space-x-1 text-sm text-gray-500">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a4 4 0 118 0v4m-4 8a3 3 0 100-6 3 3 0 000 6z" />
                           </svg>
-                          <span>{formatDate(appointment.date)}</span>
+                          <span>{formatDate(appointment.appointmentDate)}</span>
                         </div>
                         <div className="flex items-center space-x-1 text-sm text-gray-500">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <span>{formatTime(appointment.time)}</span>
+                          <span>{new Date(appointment.appointmentDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
                         </div>
                       </div>
                     </div>

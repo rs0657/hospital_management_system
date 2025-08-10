@@ -142,7 +142,7 @@ export default function Prescriptions() {
     try {
       const response = await fetch('/api/prescriptions')
       const data = await response.json()
-      setPrescriptions(data)
+      setPrescriptions(data.prescriptions || [])
     } catch (error) {
       console.error('Error fetching prescriptions:', error)
     } finally {
@@ -151,10 +151,12 @@ export default function Prescriptions() {
   }
 
   const filteredPrescriptions = prescriptions.filter(prescription => {
+    const medications = JSON.parse(prescription.medications || '[]')
     const matchesSearch = prescription.patient?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          prescription.doctor?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         prescription.medications.some(med => med.toLowerCase().includes(searchTerm.toLowerCase()))
-    const matchesDate = !dateFilter || new Date(prescription.date).toDateString() === new Date(dateFilter).toDateString()
+                         prescription.diagnosis.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         medications.some(med => med.name?.toLowerCase().includes(searchTerm.toLowerCase()))
+    const matchesDate = !dateFilter || new Date(prescription.createdAt).toDateString() === new Date(dateFilter).toDateString()
     return matchesSearch && matchesDate
   })
 
@@ -244,13 +246,13 @@ export default function Prescriptions() {
                         {prescription.patient?.name}
                       </h3>
                       <p className="text-sm text-gray-600">
-                        Dr. {prescription.doctor?.name} • {prescription.doctor?.specialty}
+                        Dr. {prescription.doctor?.name} • {prescription.doctor?.specialization}
                       </p>
                       <div className="flex items-center space-x-1 text-sm text-gray-500 mt-1">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a4 4 0 118 0v4m-4 8a3 3 0 100-6 3 3 0 000 6z" />
                         </svg>
-                        <span>{formatDate(prescription.date)}</span>
+                        <span>{formatDate(prescription.createdAt)}</span>
                       </div>
                     </div>
                   </div>
@@ -269,45 +271,9 @@ export default function Prescriptions() {
                   </div>
                 </div>
 
-                {/* Medications Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                  {prescription.medications?.map((medication, index) => (
-                    <div key={index} className="bg-gradient-to-r from-purple-50 to-violet-50 rounded-xl p-4 border border-purple-100">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-violet-500 rounded-lg flex items-center justify-center">
-                          <span className="text-white text-sm font-bold">{index + 1}</span>
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-semibold text-gray-900 text-sm">{medication}</p>
-                          <p className="text-xs text-gray-600">
-                            {prescription.dosages && prescription.dosages[index]}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Instructions */}
-                {prescription.instructions && (
-                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-                    <div className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="font-medium text-blue-900 text-sm mb-1">Instructions</p>
-                        <p className="text-blue-700 text-sm">{prescription.instructions}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {/* Diagnosis */}
                 {prescription.diagnosis && (
-                  <div className="bg-green-50 rounded-xl p-4 border border-green-100 mt-4">
+                  <div className="bg-green-50 rounded-xl p-4 border border-green-100 mb-4">
                     <div className="flex items-start space-x-3">
                       <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -317,6 +283,44 @@ export default function Prescriptions() {
                       <div>
                         <p className="font-medium text-green-900 text-sm mb-1">Diagnosis</p>
                         <p className="text-green-700 text-sm">{prescription.diagnosis}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Medications Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                  {JSON.parse(prescription.medications || '[]').map((medication, index) => (
+                    <div key={index} className="bg-gradient-to-r from-purple-50 to-violet-50 rounded-xl p-4 border border-purple-100">
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-violet-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">{index + 1}</span>
+                          </div>
+                          <p className="font-semibold text-gray-900 text-sm">{medication.name}</p>
+                        </div>
+                        <div className="text-xs text-gray-600 space-y-1">
+                          <p><span className="font-medium">Dosage:</span> {medication.dosage}</p>
+                          <p><span className="font-medium">Frequency:</span> {medication.frequency}</p>
+                          <p><span className="font-medium">Duration:</span> {medication.duration}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Notes */}
+                {prescription.notes && (
+                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-blue-900 mb-1">Notes</p>
+                        <p className="text-blue-800 text-sm leading-relaxed">{prescription.notes}</p>
                       </div>
                     </div>
                   </div>

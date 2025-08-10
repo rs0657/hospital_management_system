@@ -142,7 +142,7 @@ export default function Doctors() {
     try {
       const response = await fetch('/api/doctors')
       const data = await response.json()
-      setDoctors(data)
+      setDoctors(data.doctors || [])
     } catch (error) {
       console.error('Error fetching doctors:', error)
     } finally {

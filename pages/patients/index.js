@@ -141,7 +141,7 @@ export default function Patients() {
     try {
       const response = await fetch('/api/patients')
       const data = await response.json()
-      setPatients(data)
+      setPatients(data.patients || [])
     } catch (error) {
       console.error('Error fetching patients:', error)
     } finally {

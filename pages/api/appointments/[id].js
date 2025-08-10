@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth/next'
-import { authOptions } from './auth/[...nextauth]'
+import { authOptions } from '../auth/[...nextauth]'
 
 const prisma = new PrismaClient()
 
@@ -11,89 +11,45 @@ export default async function handler(req, res) {
     return res.status(401).json({ message: 'Unauthorized' })
   }
 
+  const { id } = req.query
+
   switch (req.method) {
     case 'GET':
-      return getAppointments(req, res, session)
-    case 'POST':
-      return createAppointment(req, res, session)
+      return getAppointment(req, res, id)
     case 'PUT':
-      return updateAppointment(req, res, session)
+      return updateAppointment(req, res, session, id)
     case 'DELETE':
-      return deleteAppointment(req, res, session)
+      return deleteAppointment(req, res, session, id)
     default:
       return res.status(405).json({ message: 'Method not allowed' })
   }
 }
 
-async function getAppointments(req, res, session) {
+async function getAppointment(req, res, id) {
   try {
-    let whereClause = {}
-    
-    // Doctors can only see their own appointments
-    if (session.user.role === 'doctor') {
-      // Note: This assumes doctor name matches user name
-      // In a real app, you'd have a proper relationship between users and doctors
-      const doctor = await prisma.doctor.findFirst({
-        where: { name: session.user.name }
-      })
-      if (doctor) {
-        whereClause = { doctorId: doctor.id }
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        patient: true,
+        doctor: true
       }
+    })
+    
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found' })
     }
-
-    const appointments = await prisma.appointment.findMany({
-      where: whereClause,
-      include: {
-        patient: true,
-        doctor: true
-      },
-      orderBy: {
-        appointmentDate: 'asc'
-      }
-    })
     
-    res.status(200).json({ appointments })
+    res.status(200).json(appointment)
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching appointments' })
+    res.status(500).json({ message: 'Error fetching appointment' })
   }
 }
 
-async function createAppointment(req, res, session) {
-  // Only admins and receptionists can create appointments
-  if (!['admin', 'receptionist'].includes(session.user.role)) {
-    return res.status(403).json({ message: 'Forbidden' })
-  }
-
+async function updateAppointment(req, res, session, id) {
   try {
-    const { patientId, doctorId, appointmentDate, reason, notes } = req.body
+    const { status, appointmentDate, reason, notes } = req.body
     
-    const appointment = await prisma.appointment.create({
-      data: {
-        patientId: parseInt(patientId),
-        doctorId: parseInt(doctorId),
-        appointmentDate: new Date(appointmentDate),
-        status: 'scheduled',
-        reason: reason || '',
-        notes: notes || ''
-      },
-      include: {
-        patient: true,
-        doctor: true
-      }
-    })
-    
-    res.status(201).json(appointment)
-  } catch (error) {
-    console.error('Error creating appointment:', error)
-    res.status(500).json({ message: 'Error creating appointment' })
-  }
-}
-
-async function updateAppointment(req, res, session) {
-  try {
-    const { id, status, appointmentDate } = req.body
-    
-    // Doctors can update status, admins can update everything
+    // Doctors can update status, admins/receptionists can update everything
     if (session.user.role === 'doctor') {
       // Verify the appointment belongs to this doctor
       const doctor = await prisma.doctor.findFirst({
@@ -118,6 +74,10 @@ async function updateAppointment(req, res, session) {
     if (appointmentDate && ['admin', 'receptionist'].includes(session.user.role)) {
       updateData.appointmentDate = new Date(appointmentDate)
     }
+    if (reason !== undefined && ['admin', 'receptionist'].includes(session.user.role)) {
+      updateData.reason = reason
+    }
+    if (notes !== undefined) updateData.notes = notes
     
     const appointment = await prisma.appointment.update({
       where: { id: parseInt(id) },
@@ -135,21 +95,20 @@ async function updateAppointment(req, res, session) {
   }
 }
 
-async function deleteAppointment(req, res, session) {
+async function deleteAppointment(req, res, session, id) {
   // Only admins can delete appointments
   if (session.user.role !== 'admin') {
     return res.status(403).json({ message: 'Forbidden' })
   }
 
   try {
-    const { id } = req.query
-    
     await prisma.appointment.delete({
       where: { id: parseInt(id) }
     })
     
     res.status(200).json({ message: 'Appointment deleted successfully' })
   } catch (error) {
+    console.error('Error deleting appointment:', error)
     res.status(500).json({ message: 'Error deleting appointment' })
   }
 }

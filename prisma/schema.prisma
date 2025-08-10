@@ -58,6 +58,8 @@ model Appointment {
   doctorId        Int
   appointmentDate DateTime
   status          String   @default("scheduled")
+  reason          String?
+  notes           String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   patient         Patient @relation(fields: [patientId], references: [id])
@@ -79,12 +81,13 @@ model Prescription {
 }
 
 model Billing {
-  id          Int      @id @default(autoincrement())
-  patientId   Int
-  amount      Float
-  paymentStatus String @default("pending")
-  billDate    DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  patient     Patient @relation(fields: [patientId], references: [id])
+  id            Int      @id @default(autoincrement())
+  patientId     Int
+  amount        Float
+  description   String?
+  paymentStatus String   @default("pending")
+  billDate      DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  patient       Patient @relation(fields: [patientId], references: [id])
 }

@@ -38,6 +38,8 @@ export default function AddPrescription() {
       if (response.ok) {
         const data = await response.json();
         setPatients(data.patients || []);
+      } else {
+        console.error('Failed to fetch patients:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error fetching patients:', error);

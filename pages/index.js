@@ -155,16 +155,16 @@ export default function Dashboard() {
         fetch('/api/billing'),
       ])
 
-      const patients = await patientsRes.json()
-      const doctors = await doctorsRes.json()
-      const appointments = await appointmentsRes.json()
-      const billing = await billingRes.json()
+      const patientsData = await patientsRes.json()
+      const doctorsData = await doctorsRes.json()
+      const appointmentsData = await appointmentsRes.json()
+      const billingData = await billingRes.json()
 
       setStats({
-        patients: patients.length || 0,
-        doctors: doctors.length || 0,
-        appointments: appointments.length || 0,
-        pendingBills: billing.filter(bill => bill.paymentStatus === 'pending').length || 0,
+        patients: patientsData.patients?.length || 0,
+        doctors: doctorsData.doctors?.length || 0,
+        appointments: appointmentsData.appointments?.length || 0,
+        pendingBills: billingData.billing?.filter(bill => bill.paymentStatus === 'pending').length || 0,
       })
     } catch (error) {
       console.error('Error fetching stats:', error)

@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth/next'
-import { authOptions } from './auth/[...nextauth]'
+import { authOptions } from '../auth/[...nextauth]'
 
 const prisma = new PrismaClient()
 
@@ -11,79 +11,52 @@ export default async function handler(req, res) {
     return res.status(401).json({ message: 'Unauthorized' })
   }
 
+  const { id } = req.query
+
   switch (req.method) {
     case 'GET':
-      return getBilling(req, res, session)
-    case 'POST':
-      return createBill(req, res, session)
+      return getBill(req, res, id)
     case 'PUT':
-      return updateBill(req, res, session)
+      return updateBill(req, res, session, id)
     case 'DELETE':
-      return deleteBill(req, res, session)
+      return deleteBill(req, res, session, id)
     default:
       return res.status(405).json({ message: 'Method not allowed' })
   }
 }
 
-async function getBilling(req, res, session) {
+async function getBill(req, res, id) {
   try {
-    const billing = await prisma.billing.findMany({
-      include: {
-        patient: true
-      },
-      orderBy: {
-        billDate: 'desc'
-      }
-    })
-    
-    res.status(200).json({ billing })
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching billing records' })
-  }
-}
-
-async function createBill(req, res, session) {
-  // Only admins and receptionists can create bills
-  if (!['admin', 'receptionist'].includes(session.user.role)) {
-    return res.status(403).json({ message: 'Forbidden' })
-  }
-
-  try {
-    const { patientId, amount, paymentStatus, description, billDate } = req.body
-    
-    const bill = await prisma.billing.create({
-      data: {
-        patientId: parseInt(patientId),
-        amount: parseFloat(amount),
-        paymentStatus: paymentStatus || 'pending',
-        description: description || '',
-        billDate: billDate ? new Date(billDate) : new Date()
-      },
+    const bill = await prisma.billing.findUnique({
+      where: { id: parseInt(id) },
       include: {
         patient: true
       }
     })
     
-    res.status(201).json(bill)
+    if (!bill) {
+      return res.status(404).json({ message: 'Bill not found' })
+    }
+    
+    res.status(200).json(bill)
   } catch (error) {
-    console.error('Error creating bill:', error)
-    res.status(500).json({ message: 'Error creating bill' })
+    res.status(500).json({ message: 'Error fetching bill' })
   }
 }
 
-async function updateBill(req, res, session) {
+async function updateBill(req, res, session, id) {
   // Only admins and receptionists can update bills
   if (!['admin', 'receptionist'].includes(session.user.role)) {
     return res.status(403).json({ message: 'Forbidden' })
   }
 
   try {
-    const { id } = req.query
-    const { amount, paymentStatus } = req.body
+    const { amount, paymentStatus, description } = req.body
     
     const updateData = {}
     if (amount !== undefined) updateData.amount = parseFloat(amount)
     if (paymentStatus) updateData.paymentStatus = paymentStatus
+    if (description !== undefined) updateData.description = description
     
     const bill = await prisma.billing.update({
       where: { id: parseInt(id) },
@@ -95,25 +68,25 @@ async function updateBill(req, res, session) {
     
     res.status(200).json(bill)
   } catch (error) {
+    console.error('Error updating bill:', error)
     res.status(500).json({ message: 'Error updating bill' })
   }
 }
 
-async function deleteBill(req, res, session) {
+async function deleteBill(req, res, session, id) {
   // Only admins can delete bills
   if (session.user.role !== 'admin') {
     return res.status(403).json({ message: 'Forbidden' })
   }
 
   try {
-    const { id } = req.query
-    
     await prisma.billing.delete({
       where: { id: parseInt(id) }
     })
     
     res.status(200).json({ message: 'Bill deleted successfully' })
   } catch (error) {
+    console.error('Error deleting bill:', error)
     res.status(500).json({ message: 'Error deleting bill' })
   }
 }

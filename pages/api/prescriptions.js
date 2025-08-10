@@ -29,38 +29,31 @@ async function getPrescriptions(req, res, session) {
   try {
     let whereClause = {}
     
-    // Doctors can only see prescriptions for their appointments
+    // Doctors can only see their own prescriptions
     if (session.user.role === 'doctor') {
       const doctor = await prisma.doctor.findFirst({
         where: { name: session.user.name }
       })
       
       if (doctor) {
-        whereClause = {
-          appointment: {
-            doctorId: doctor.id
-          }
-        }
+        whereClause = { doctorId: doctor.id }
       }
     }
 
     const prescriptions = await prisma.prescription.findMany({
       where: whereClause,
       include: {
-        appointment: {
-          include: {
-            patient: true,
-            doctor: true
-          }
-        }
+        patient: true,
+        doctor: true
       },
       orderBy: {
         createdAt: 'desc'
       }
     })
     
-    res.status(200).json(prescriptions)
+    res.status(200).json({ prescriptions })
   } catch (error) {
+    console.error('Error fetching prescriptions:', error)
     res.status(500).json({ message: 'Error fetching prescriptions' })
   }
 }
@@ -72,44 +65,52 @@ async function createPrescription(req, res, session) {
   }
 
   try {
-    const { appointmentId, medicineName, dosage, duration } = req.body
+    const { patientId, doctorId, diagnosis, medications, frequency, notes } = req.body
     
-    // If doctor, verify they own the appointment
-    if (session.user.role === 'doctor') {
+    let finalDoctorId = doctorId
+    
+    // If no doctorId provided and user is a doctor, use their ID
+    if (!finalDoctorId && session.user.role === 'doctor') {
       const doctor = await prisma.doctor.findFirst({
         where: { name: session.user.name }
       })
       
       if (doctor) {
-        const appointment = await prisma.appointment.findFirst({
-          where: { id: parseInt(appointmentId), doctorId: doctor.id }
-        })
-        
-        if (!appointment) {
-          return res.status(403).json({ message: 'Forbidden: Not your appointment' })
-        }
+        finalDoctorId = doctor.id
+      } else {
+        return res.status(400).json({ message: 'Doctor not found' })
+      }
+    }
+    
+    // If doctor, verify they are creating their own prescription
+    if (session.user.role === 'doctor') {
+      const doctor = await prisma.doctor.findFirst({
+        where: { name: session.user.name }
+      })
+      
+      if (doctor && doctor.id !== parseInt(finalDoctorId)) {
+        return res.status(403).json({ message: 'Forbidden: Can only create your own prescriptions' })
       }
     }
     
     const prescription = await prisma.prescription.create({
       data: {
-        appointmentId: parseInt(appointmentId),
-        medicineName,
-        dosage,
-        duration
+        patientId: parseInt(patientId),
+        doctorId: parseInt(finalDoctorId),
+        diagnosis,
+        medications: JSON.stringify(medications),
+        frequency,
+        notes: notes || ''
       },
       include: {
-        appointment: {
-          include: {
-            patient: true,
-            doctor: true
-          }
-        }
+        patient: true,
+        doctor: true
       }
     })
     
     res.status(201).json(prescription)
   } catch (error) {
+    console.error('Error creating prescription:', error)
     res.status(500).json({ message: 'Error creating prescription' })
   }
 }
@@ -122,9 +123,9 @@ async function updatePrescription(req, res, session) {
 
   try {
     const { id } = req.query
-    const { medicineName, dosage, duration } = req.body
+    const { diagnosis, medications, frequency, notes } = req.body
     
-    // If doctor, verify they own the prescription's appointment
+    // If doctor, verify they own the prescription
     if (session.user.role === 'doctor') {
       const doctor = await prisma.doctor.findFirst({
         where: { name: session.user.name }
@@ -133,38 +134,35 @@ async function updatePrescription(req, res, session) {
       if (doctor) {
         const prescription = await prisma.prescription.findFirst({
           where: { 
-            id: parseInt(id)
-          },
-          include: {
-            appointment: true
+            id: parseInt(id),
+            doctorId: doctor.id
           }
         })
         
-        if (!prescription || prescription.appointment.doctorId !== doctor.id) {
+        if (!prescription) {
           return res.status(403).json({ message: 'Forbidden' })
         }
       }
     }
     
+    const updateData = {}
+    if (diagnosis) updateData.diagnosis = diagnosis
+    if (medications) updateData.medications = JSON.stringify(medications)
+    if (frequency) updateData.frequency = frequency
+    if (notes !== undefined) updateData.notes = notes
+    
     const prescription = await prisma.prescription.update({
       where: { id: parseInt(id) },
-      data: {
-        medicineName,
-        dosage,
-        duration
-      },
+      data: updateData,
       include: {
-        appointment: {
-          include: {
-            patient: true,
-            doctor: true
-          }
-        }
+        patient: true,
+        doctor: true
       }
     })
     
     res.status(200).json(prescription)
   } catch (error) {
+    console.error('Error updating prescription:', error)
     res.status(500).json({ message: 'Error updating prescription' })
   }
 }
@@ -184,6 +182,7 @@ async function deletePrescription(req, res, session) {
     
     res.status(200).json({ message: 'Prescription deleted successfully' })
   } catch (error) {
+    console.error('Error deleting prescription:', error)
     res.status(500).json({ message: 'Error deleting prescription' })
   }
 }
