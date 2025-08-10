@@ -1,0 +1,6 @@
+[{"id":23,"name":"Ravi Kumar","email":"admin@hospital.com","password":"$2b$10$5MrAILD765bZJQSOkYIOPONF06h270iiJEQAO1XOkFcNWg9BhxxDG","role":"admin","createdAt":1754841825948,"updatedAt":1754841825948},
+{"id":24,"name":"Dr. Rajesh Reddy","email":"doctor1@hospital.com","password":"$2b$10$5MrAILD765bZJQSOkYIOPONF06h270iiJEQAO1XOkFcNWg9BhxxDG","role":"doctor","createdAt":1754841825959,"updatedAt":1754841825959},
+{"id":25,"name":"Dr. Priya Nair","email":"doctor2@hospital.com","password":"$2b$10$5MrAILD765bZJQSOkYIOPONF06h270iiJEQAO1XOkFcNWg9BhxxDG","role":"doctor","createdAt":1754841825964,"updatedAt":1754841825964},
+{"id":26,"name":"Dr. Arjun Menon","email":"doctor3@hospital.com","password":"$2b$10$5MrAILD765bZJQSOkYIOPONF06h270iiJEQAO1XOkFcNWg9BhxxDG","role":"doctor","createdAt":1754841825969,"updatedAt":1754841825969},
+{"id":27,"name":"Dr. Kavya Iyer","email":"doctor4@hospital.com","password":"$2b$10$5MrAILD765bZJQSOkYIOPONF06h270iiJEQAO1XOkFcNWg9BhxxDG","role":"doctor","createdAt":1754841825976,"updatedAt":1754841825976},
+{"id":28,"name":"Lakshmi Pillai","email":"receptionist@hospital.com","password":"$2b$10$5MrAILD765bZJQSOkYIOPONF06h270iiJEQAO1XOkFcNWg9BhxxDG","role":"receptionist","createdAt":1754841825981,"updatedAt":1754841825981}]

@@ -4,20 +4,18 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "prisma generate && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:seed": "node prisma/seed.js",
-    "db:deploy": "prisma db push",
-    "postinstall": "prisma generate"
+    "db:seed": "node lib/seed.js",
+    "db:init": "node lib/init-db.js"
   },
   "dependencies": {
-    "@prisma/client": "^6.13.0",
     "bcryptjs": "^3.0.2",
     "mysql2": "^3.14.3",
     "next": "15.4.6",
     "next-auth": "^4.24.11",
-    "prisma": "^6.13.0",
+    "pg": "^8.16.3",
     "react": "19.1.0",
     "react-dom": "19.1.0"
   },
