@@ -2,10 +2,19 @@
 
 A comprehensive, modern hospital management system built with **Next.js**, **Prisma**, **SQLite**, and **Tailwind CSS**. Features a beautiful, responsive UI with role-based access control for managing patients, doctors, appointments, prescriptions, and billing.
 
+> 🚀 **Ready to explore?** Check out the [**Demo Guide**](./DEMO_GUIDE.md) for a complete walkthrough and [**Demo Credentials**](./LOGIN_CREDENTIALS.md) to test all features!
+
 ![Hospital Management System](https://img.shields.io/badge/Next.js-15.4.6-black?style=for-the-badge&logo=next.js)
 ![Prisma](https://img.shields.io/badge/Prisma-6.13.0-2D3748?style=for-the-badge&logo=prisma)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4.1-06B6D4?style=for-the-badge&logo=tailwind-css)
 ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite)
+
+## 📋 Quick Navigation
+- 🎯 [**Demo & Testing**](#-demo--testing) - Complete demo guide and credentials
+- 🚀 [**Getting Started**](#-getting-started) - Installation and setup
+- ✨ [**Features**](#-features) - System capabilities
+- 🏗️ [**Project Structure**](#️-project-structure) - Code organization
+- 🛠️ [**Built With**](#️-built-with) - Technology stack
 
 ## ✨ Features
 
@@ -96,7 +105,35 @@ A comprehensive, modern hospital management system built with **Next.js**, **Pri
 6. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
-## 🏗️ Project Structure
+## � **Demo & Testing**
+
+### 📖 **Complete Demo Guide**
+👉 **[View the Complete Demo Guide](./DEMO_GUIDE.md)** - Comprehensive walkthrough of all features and functionality
+
+### 🔑 **Quick Demo Access**
+👉 **[Demo Credentials](./LOGIN_CREDENTIALS.md)** - All demo account usernames and passwords
+
+### ⚡ **Quick Start Demo**
+After running the setup, log in with these demo accounts:
+
+| Role | Email | Password | Access |
+|------|-------|----------|---------|
+| **Admin** | admin@hospital.com | admin123 | Full system access |
+| **Receptionist** | receptionist@hospital.com | receptionist123 | Patients, Appointments, Billing |
+| **Doctor** | doctor1@hospital.com | doctor123 | Appointments, Prescriptions |
+
+### 🧪 **Test All Features**
+- ✅ **Patient Management** - Add, view, edit patient records
+- ✅ **Doctor Profiles** - Manage doctor information and specialties  
+- ✅ **Appointment Scheduling** - Book and manage appointments
+- ✅ **Prescription System** - Create and track prescriptions
+- ✅ **Billing Management** - Generate and manage invoices
+- ✅ **Role-based Access** - Test different user permissions
+
+### 🐛 **Troubleshooting**
+Having issues? Check the **[Debug Guide](./DEBUG_PATIENT_SELECTION.md)** for common problems and solutions.
+
+## �🏗️ Project Structure
 
 ```
 hospital_management_system/
