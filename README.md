@@ -1,263 +1,234 @@
-# Hospital Patient Record System
+# 🏥 Hospital Management System
 
-A comprehensive hospital management system built with Next.js, featuring role-based authentication, patient management, appointment scheduling, prescription management, and billing.
+A comprehensive, modern hospital management system built with **Next.js**, **Prisma**, **SQLite**, and **Tailwind CSS**. Features a beautiful, responsive UI with role-based access control for managing patients, doctors, appointments, prescriptions, and billing.
 
-## 🚀 Features
+![Hospital Management System](https://img.shields.io/badge/Next.js-15.4.6-black?style=for-the-badge&logo=next.js)
+![Prisma](https://img.shields.io/badge/Prisma-6.13.0-2D3748?style=for-the-badge&logo=prisma)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4.1-06B6D4?style=for-the-badge&logo=tailwind-css)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite)
 
-### Authentication & Authorization
+## ✨ Features
+
+### 🔐 **Authentication & Authorization**
+- **NextAuth.js** integration with credentials provider
 - **Role-based access control** (Admin, Doctor, Receptionist)
-- **NextAuth.js** with credentials provider
-- **Secure password hashing** with bcryptjs
+- Secure session management with JWT
 
-### Core Modules
-- **Patient Management** - Add, view, edit patient records
-- **Doctor Management** - Manage doctor profiles and specialties
-- **Appointment Scheduling** - Book and manage appointments
-- **Prescription Management** - Create and track prescriptions
-- **Billing System** - Generate bills and track payments
+### 👥 **Patient Management**
+- Complete patient profiles with personal information
+- Search and filter functionality
+- Medical history tracking
+- Responsive card-based UI
 
-### Role Permissions
-- **Admin**: Full CRUD access to all modules
-- **Doctor**: View appointments, add prescriptions
-- **Receptionist**: Add patients, book appointments, manage billing
+### 👨‍⚕️ **Doctor Management**
+- Doctor profiles with specialties
+- Experience and consultation fee tracking
+- Specialty-based color coding
+- License number management
 
-## 🛠️ Tech Stack
+### 📅 **Appointment System**
+- Appointment scheduling and management
+- Status tracking (Scheduled, Completed, Cancelled, No-show)
+- Real-time status updates
+- Date and time filtering
 
-- **Frontend**: Next.js 15 (Pages Router), Tailwind CSS
-- **Backend**: Next.js API Routes
-- **Database**: MySQL with Prisma ORM
-- **Authentication**: NextAuth.js
-- **UI**: Tailwind CSS with responsive design
-
-## 📋 Prerequisites
-
-- Node.js 18+ 
-- MySQL Database
-- npm or yarn package manager
-
-## 🚀 Quick Start
-
-### 1. Clone & Install
-```bash
-git clone <repository-url>
-cd hospital_management
-npm install
-```
-
-### 2. Database Setup
-```bash
-# Create MySQL database
-mysql -u root -p
-CREATE DATABASE hospital_management;
-```
-
-### 3. Environment Configuration
-Copy `.env.example` to `.env` and update:
-```env
-DATABASE_URL="mysql://username:password@localhost:3306/hospital_management"
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-secret-key-here"
-```
-
-### 4. Database Migration & Seeding
-```bash
-# Run migrations
-npx prisma migrate dev --name init
-
-# Seed database with demo data
-npm run db:seed
-```
-
-### 5. Start Development Server
-```bash
-npm run dev
-```
-
-Visit `http://localhost:3000` and login with demo accounts.
-
-## 👥 Demo Accounts
-
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@hospital.com | password123 |
-| Doctor | doctor1@hospital.com | password123 |
-| Receptionist | receptionist@hospital.com | password123 |
-
-## 📁 Project Structure
-
-```
-hospital_management/
-├── pages/
-│   ├── api/
-│   │   ├── auth/
-│   │   │   ├── [...nextauth].js    # NextAuth configuration
-│   │   │   └── register.js         # User registration (Admin only)
-│   │   ├── patients.js             # Patient CRUD operations
-│   │   ├── doctors.js              # Doctor management
-│   │   ├── appointments.js         # Appointment scheduling
-│   │   ├── prescriptions.js        # Prescription management
-│   │   └── billing.js              # Billing operations
-│   ├── auth/
-│   │   └── login.js                # Login page
-│   ├── patients/
-│   │   ├── index.js                # Patient list
-│   │   └── add.js                  # Add patient form
-│   ├── doctors/
-│   ├── appointments/
-│   ├── prescriptions/
-│   ├── billing/
-│   ├── _app.js                     # App configuration
-│   └── index.js                    # Dashboard
-├── prisma/
-│   ├── schema.prisma               # Database schema
-│   └── seed.js                     # Database seeding
-├── styles/
-│   └── globals.css                 # Global styles
-└── frontend-all-pages.js           # All frontend components (reference)
-```
-
-## 🗄️ Database Schema
-
-### Models
-- **User** - System users with role-based access
-- **Patient** - Patient information and medical records
-- **Doctor** - Doctor profiles and specialties
-- **Appointment** - Appointment scheduling and status
-- **Prescription** - Medical prescriptions linked to appointments
-- **Billing** - Patient billing and payment tracking
-
-## 🔧 API Endpoints
-
-| Method | Endpoint | Description | Access |
-|--------|----------|-------------|---------|
-| POST | `/api/auth/register` | Create user | Admin |
-| GET | `/api/patients` | List patients | All |
-| POST | `/api/patients` | Add patient | Admin, Receptionist |
-| GET | `/api/doctors` | List doctors | All |
-| POST | `/api/doctors` | Add doctor | Admin |
-| GET | `/api/appointments` | List appointments | Role-based |
-| POST | `/api/appointments` | Create appointment | Admin, Receptionist |
-| POST | `/api/prescriptions` | Add prescription | Admin, Doctor |
-| GET | `/api/billing` | View billing | All |
-| POST | `/api/billing` | Create bill | Admin, Receptionist |
-
-## 🎨 Frontend Pages
-
-### Dashboard (`/`)
-- Role-specific navigation
-- Statistics overview
-- Quick action buttons
-
-### Authentication (`/auth/login`)
-- Secure login form
-- Demo account information
-- Error handling
-
-### Patient Management (`/patients`)
-- Patient listing with search
-- Add new patients
-- Patient details view
-
-### Appointments (`/appointments`)
-- Appointment calendar view
-- Schedule new appointments
-- Status management
-
-### Prescriptions (`/prescriptions`)
+### 💊 **Prescription Management**
+- Digital prescription creation
+- Medication tracking with dosages
+- Doctor and patient association
 - Prescription history
-- Add new prescriptions (Doctors)
-- Patient-prescription mapping
 
-### Billing (`/billing`)
+### 💰 **Billing System**
+- Invoice generation and management
 - Payment status tracking
-- Generate new bills
-- Financial summary
+- Service breakdown
+- Financial reporting dashboard
 
-## 🛡️ Security Features
+### 🎨 **Modern UI/UX**
+- **Responsive design** for all screen sizes
+- **Gradient backgrounds** and modern styling
+- **Hover animations** and smooth transitions
+- **Color-coded sections** for easy navigation
+- **Mobile-first approach**
+
+## 🚀 Getting Started
+
+### Prerequisites
+- **Node.js** 18+ 
+- **npm** or **yarn**
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/rs0657/hospital_management_system.git
+   cd hospital_management_system
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   ```
+   Update the `.env` file with your configuration:
+   ```env
+   DATABASE_URL="file:./dev.db"
+   NEXTAUTH_URL="http://localhost:3000"
+   NEXTAUTH_SECRET="your-secret-key-here"
+   ```
+
+4. **Set up the database**
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   npm run db:seed
+   ```
+
+5. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+6. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
+## 🏗️ Project Structure
+
+```
+hospital_management_system/
+├── 📁 pages/              # Next.js pages and API routes
+│   ├── 📁 api/            # REST API endpoints
+│   ├── 📁 auth/           # Authentication pages
+│   ├── 📁 patients/       # Patient management
+│   ├── 📁 doctors/        # Doctor management
+│   ├── 📁 appointments/   # Appointment system
+│   ├── 📁 prescriptions/  # Prescription management
+│   └── 📁 billing/        # Billing system
+├── 📁 prisma/             # Database schema and seed
+├── 📁 styles/             # Tailwind CSS styles
+├── 📁 public/             # Static assets
+└── 📁 .vscode/            # VS Code configuration
+```
+
+## 🛠️ Built With
+
+- **[Next.js 15.4.6](https://nextjs.org/)** - React framework with App Router
+- **[Prisma 6.13.0](https://prisma.io/)** - Database ORM
+- **[SQLite](https://sqlite.org/)** - Lightweight database
+- **[NextAuth.js 4.24.11](https://next-auth.js.org/)** - Authentication
+- **[Tailwind CSS 3.4.1](https://tailwindcss.com/)** - Utility-first CSS
+- **[React 19.1.0](https://react.dev/)** - UI library
+
+## 📊 Database Schema
+
+The system uses a relational database with the following entities:
+- **Users** (Authentication & roles)
+- **Patients** (Patient information)
+- **Doctors** (Doctor profiles)
+- **Appointments** (Scheduling)
+- **Prescriptions** (Medical prescriptions)
+- **Billing** (Financial records)
+
+## 🎭 User Roles
+
+### 👑 **Admin**
+- Full system access
+- User management
+- System configuration
+- All CRUD operations
+
+### 👨‍⚕️ **Doctor**
+- View appointments
+- Manage prescriptions
+- Update appointment status
+- Patient records access
+
+### 👩‍💼 **Receptionist**
+- Patient management
+- Appointment scheduling
+- Billing operations
+- Basic system access
+
+## 🔧 Available Scripts
+
+```bash
+# Development
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
+
+# Database
+npx prisma generate  # Generate Prisma client
+npx prisma db push   # Push schema to database
+npm run db:seed      # Seed database with sample data
+npx prisma studio    # Open Prisma Studio
+```
+
+## 🎨 UI Components
+
+- **Navigation Bar** with role-based menu items
+- **Dashboard Cards** with statistics and quick actions
+- **Data Tables** with search and filtering
+- **Form Components** with validation
+- **Status Badges** with color coding
+- **Modal Dialogs** for actions
+- **Loading States** and animations
+
+## 🔒 Security Features
 
 - **JWT-based authentication**
 - **Role-based route protection**
-- **Password hashing with bcryptjs**
-- **SQL injection prevention with Prisma**
-- **CSRF protection**
-
-## 🔄 Development Workflow
-
-### Adding New Features
-1. Define database schema in `prisma/schema.prisma`
-2. Create migration: `npx prisma migrate dev`
-3. Implement API endpoints in `pages/api/`
-4. Create frontend pages and components
-5. Test with different user roles
-
-### Database Management
-```bash
-# View database in Prisma Studio
-npx prisma studio
-
-# Reset database
-npx prisma migrate reset
-
-# Generate new migration
-npx prisma migrate dev --name feature_name
-```
+- **Input validation and sanitization**
+- **SQL injection prevention** (Prisma ORM)
+- **Environment variable protection**
 
 ## 📱 Responsive Design
 
-The application is fully responsive and works on:
-- Desktop computers
-- Tablets
-- Mobile devices
+- **Mobile-first approach**
+- **Responsive navigation**
+- **Adaptive layouts**
+- **Touch-friendly interfaces**
+- **Cross-browser compatibility**
 
 ## 🚀 Deployment
 
-### Production Build
+### Vercel (Recommended)
+1. Connect your GitHub repository to Vercel
+2. Configure environment variables
+3. Deploy automatically on push
+
+### Manual Deployment
 ```bash
 npm run build
-npm start
+npm run start
 ```
 
-### Environment Variables for Production
-```env
-DATABASE_URL="your-production-database-url"
-NEXTAUTH_URL="your-production-domain"
-NEXTAUTH_SECRET="your-production-secret"
-```
-
-## 🧪 Testing
-
-### Test User Flows
-1. **Admin Flow**: Login → Manage all modules → Create users
-2. **Doctor Flow**: Login → View appointments → Add prescriptions
-3. **Receptionist Flow**: Login → Add patients → Schedule appointments → Process billing
-
-## 📝 Contributing
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create feature branch (`git checkout -b feature/new-feature`)
-3. Commit changes (`git commit -am 'Add new feature'`)
-4. Push to branch (`git push origin feature/new-feature`)
-5. Create Pull Request
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Open a Pull Request
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👨‍💻 Author
+
+**rs0657**
+- GitHub: [@rs0657](https://github.com/rs0657)
 
 ## 🆘 Support
 
-For support, email support@hospital-system.com or create an issue in the repository.
-
-## 🔮 Future Enhancements
-
-- [ ] Email notifications for appointments
-- [ ] PDF report generation
-- [ ] Advanced search and filtering
-- [ ] Mobile app companion
-- [ ] Insurance integration
-- [ ] Telemedicine features
-- [ ] Analytics dashboard
-- [ ] Multi-language support
+If you have any questions or need help with setup, please open an issue in the GitHub repository.
 
 ---
 
-Built with ❤️ using Next.js and Prisma
+**⭐ If you find this project helpful, please give it a star on GitHub!**
