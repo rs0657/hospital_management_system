@@ -50,48 +50,78 @@ async function createPatient(req, res, session) {
   }
 
   try {
-    const { name, dob, gender, phone, address } = req.body
+    const { 
+      name, 
+      email, 
+      phone, 
+      address, 
+      dateOfBirth, 
+      gender, 
+      bloodGroup, 
+      emergencyContact, 
+      medicalHistory 
+    } = req.body
     
     const patient = await prisma.patient.create({
       data: {
         name,
-        dob: new Date(dob),
-        gender,
+        email: email || null,
         phone,
-        address
+        address,
+        dateOfBirth: new Date(dateOfBirth),
+        gender,
+        bloodGroup: bloodGroup || null,
+        emergencyContact,
+        medicalHistory: medicalHistory || null
       }
     })
     
     res.status(201).json(patient)
   } catch (error) {
-    res.status(500).json({ message: 'Error creating patient' })
+    console.error('Error creating patient:', error)
+    res.status(500).json({ message: 'Error creating patient', error: error.message })
   }
 }
 
 async function updatePatient(req, res, session) {
-  // Only admins can update patients
-  if (session.user.role !== 'admin') {
+  // Only admins and receptionists can update patients
+  if (!['admin', 'receptionist'].includes(session.user.role)) {
     return res.status(403).json({ message: 'Forbidden' })
   }
 
   try {
     const { id } = req.query
-    const { name, dob, gender, phone, address } = req.body
+    const { 
+      name, 
+      email, 
+      phone, 
+      address, 
+      dateOfBirth, 
+      gender, 
+      bloodGroup, 
+      emergencyContact, 
+      medicalHistory 
+    } = req.body
     
     const patient = await prisma.patient.update({
       where: { id: parseInt(id) },
       data: {
         name,
-        dob: new Date(dob),
-        gender,
+        email: email || null,
         phone,
-        address
+        address,
+        dateOfBirth: new Date(dateOfBirth),
+        gender,
+        bloodGroup: bloodGroup || null,
+        emergencyContact,
+        medicalHistory: medicalHistory || null
       }
     })
     
     res.status(200).json(patient)
   } catch (error) {
-    res.status(500).json({ message: 'Error updating patient' })
+    console.error('Error updating patient:', error)
+    res.status(500).json({ message: 'Error updating patient', error: error.message })
   }
 }
 

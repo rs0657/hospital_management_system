@@ -118,9 +118,9 @@ After running the setup, log in with these demo accounts:
 
 | Role | Email | Password | Access |
 |------|-------|----------|---------|
-| **Admin** | admin@hospital.com | admin123 | Full system access |
-| **Receptionist** | receptionist@hospital.com | receptionist123 | Patients, Appointments, Billing |
-| **Doctor** | doctor1@hospital.com | doctor123 | Appointments, Prescriptions |
+| **Admin** | admin@hospital.com | password123 | Full system access |
+| **Receptionist** | receptionist@hospital.com | password123 | Patients, Appointments, Billing |
+| **Doctor** | doctor1@hospital.com | password123 | Appointments, Prescriptions |
 
 ### 🧪 **Test All Features**
 - ✅ **Patient Management** - Add, view, edit patient records

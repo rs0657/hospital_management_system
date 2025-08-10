@@ -7,18 +7,18 @@ A comprehensive hospital management system built with Next.js, featuring patient
 
 ### Admin Access
 - **Username:** admin@hospital.com
-- **Password:** admin123
+- **Password:** password123
 - **Access:** Full system access
 
 ### Doctor Accounts
-- **Dr. Smith:** doctor1@hospital.com / doctor123
-- **Dr. Johnson:** doctor2@hospital.com / doctor123  
-- **Dr. Williams:** doctor3@hospital.com / doctor123
-- **Dr. Brown:** doctor4@hospital.com / doctor123
+- **Dr. Smith:** doctor1@hospital.com / password123
+- **Dr. Johnson:** doctor2@hospital.com / password123  
+- **Dr. Williams:** doctor3@hospital.com / password123
+- **Dr. Brown:** doctor4@hospital.com / password123
 
 ### Receptionist
 - **Username:** receptionist@hospital.com
-- **Password:** receptionist123
+- **Password:** password123
 - **Access:** Patients, Appointments, Billing
 
 ## 🚀 Getting Started
