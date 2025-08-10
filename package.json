@@ -4,12 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "db:seed": "node prisma/seed.js",
-    "postbuild": "npx prisma generate",
-    "vercel-build": "npx prisma generate && npx prisma db push && npm run build"
+    "db:deploy": "prisma db push",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.13.0",
