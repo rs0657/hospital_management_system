@@ -1,5 +1,53 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# ===========================================
+# SENSITIVE FILES - SECURITY CRITICAL
+# ===========================================
+
+# Environment variables and secrets
+.env*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.example
+*.env
+.envrc
+
+# Database files and credentials
+*.db
+*.sqlite
+*.sqlite3
+dev.db*
+database.db*
+*.db-journal
+*.db-shm
+*.db-wal
+prisma/dev.db*
+prisma/*.db
+
+# API Keys and secrets
+secrets/
+keys/
+certificates/
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cert
+
+# Configuration files with sensitive data
+config/production.js
+config/staging.js
+config/secrets.json
+*.secret.json
+auth-config.json
+
+# ===========================================
+# DEPENDENCIES AND PACKAGES
+# ===========================================
+
 # dependencies
 /node_modules
 /.pnp
@@ -9,39 +57,186 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
-# testing
-/coverage
+# ===========================================
+# BUILD AND DEPLOYMENT
+# ===========================================
 
 # next.js
 /.next/
 /out/
+/.swc/
 
-# production
+# production builds
 /build
+/dist
+*.tgz
 
-# misc
-.DS_Store
-*.pem
+# Static generation
+/public/sitemap.xml
+/public/robots.txt
 
-# debug
+# ===========================================
+# LOGS AND DEBUG FILES
+# ===========================================
+
+# debug logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+lerna-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# Runtime logs
+*.log
+logs/
+*.log.*
+
+# ===========================================
+# DEVELOPMENT AND TESTING
+# ===========================================
+
+# testing
+/coverage
+/.nyc_output
+/test-results
+/playwright-report
+test-results/
+
+# IDE and editor files
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+.sublime-*
+
+# ===========================================
+# OPERATING SYSTEM FILES
+# ===========================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ===========================================
+# DEPLOYMENT AND HOSTING
+# ===========================================
 
 # vercel
 .vercel
+.vercel.json
+
+# netlify
+.netlify
+
+# docker
+.dockerignore
+Dockerfile.prod
+docker-compose.prod.yml
+
+# ===========================================
+# TYPESCRIPT AND LINTING
+# ===========================================
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.tscache/
 
-# database
-dev.db
-dev.db-journal
+# ESLint
+.eslintcache
 
+# ===========================================
+# TEMPORARY AND CACHE FILES
+# ===========================================
+
+# Temporary folders
+tmp/
+temp/
+.tmp/
+.cache/
+.parcel-cache/
+
+# Editor temporary files
+*.tmp
+*.temp
+.#*
+
+# ===========================================
+# SENSITIVE BUSINESS DATA
+# ===========================================
+
+# Backup files
+*.backup
+*.bak
+*.old
+*~
+.backup/
+backups/
+
+# Data exports
+exports/
+dumps/
+*.csv
+*.xlsx
+*.sql
+data/
+
+# Upload directories (if containing sensitive files)
+uploads/
+files/
+documents/
+
+# ===========================================
+# PRISMA SPECIFIC
+# ===========================================
+
+# Prisma
 /src/generated/prisma
+prisma/migrations/
+!prisma/migrations/.gitkeep
+
+# ===========================================
+# CUSTOM SENSITIVE FILES
+# ===========================================
+
+# Add any project-specific sensitive files here
+# Example:
+# admin-panel/
+# internal-docs/
+# client-data/
