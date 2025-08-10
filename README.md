@@ -1,8 +1,14 @@
 # 🏥 Hospital Management System
 
-A comprehensive, modern hospital management system built with **Next.js**, **Prisma**, **SQLite**, and **Tailwind CSS**. Features a beautiful, responsive UI with role-based access control for managing patients, doctors, appointments, prescriptions, and billing.
+A comprehensive, modern hospital management system built with **Next.js**, **Prisma**, **SQLit- ✅ **Billing Management** - Generate and manage invoices
+- ✅ **Role-based Access** - Test different user permissions
 
-> 🚀 **Ready to explore?** Check out the [**Demo Guide**](./DEMO_GUIDE.md) for a complete walkthrough and [**Demo Credentials**](./LOGIN_CREDENTIALS.md) to test all features!
+### 🐛 **Troubleshooting**
+For setup and usage issues, refer to the [Demo Guide](./DEMO_GUIDE.md) troubleshooting section.
+
+## 🏗️ Project Structured **Tailwind CSS**. Features a beautiful, responsive UI with role-based access control for managing patients, doctors, appointments, prescriptions, and billing.
+
+> 🚀 **Ready to explore?** Check out the [**Demo Guide**](./DEMO_GUIDE.md) for a complete walkthrough with demo credentials and testing scenarios!
 
 ![Hospital Management System](https://img.shields.io/badge/Next.js-15.4.6-black?style=for-the-badge&logo=next.js)
 ![Prisma](https://img.shields.io/badge/Prisma-6.13.0-2D3748?style=for-the-badge&logo=prisma)
@@ -111,7 +117,7 @@ A comprehensive, modern hospital management system built with **Next.js**, **Pri
 👉 **[View the Complete Demo Guide](./DEMO_GUIDE.md)** - Comprehensive walkthrough of all features and functionality
 
 ### 🔑 **Quick Demo Access**
-👉 **[Demo Credentials](./LOGIN_CREDENTIALS.md)** - All demo account usernames and passwords
+The [Demo Guide](./DEMO_GUIDE.md) contains all demo account credentials and testing scenarios.
 
 ### ⚡ **Quick Start Demo**
 After running the setup, log in with these demo accounts:
