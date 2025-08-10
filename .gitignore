@@ -240,3 +240,5 @@ prisma/migrations/
 # admin-panel/
 # internal-docs/
 # client-data/
+
+.vercel

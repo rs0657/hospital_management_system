@@ -49,18 +49,31 @@ async function createDoctor(req, res, session) {
   }
 
   try {
-    const { name, specialty, phone } = req.body
+    const { name, email, specialization, phone, experience, qualification } = req.body
+    
+    // Check if doctor with email already exists
+    const existingDoctor = await prisma.doctor.findUnique({
+      where: { email }
+    })
+    
+    if (existingDoctor) {
+      return res.status(400).json({ message: 'Doctor with this email already exists' })
+    }
     
     const doctor = await prisma.doctor.create({
       data: {
         name,
-        specialty,
-        phone
+        email,
+        specialization,
+        phone,
+        experience: parseInt(experience),
+        qualification
       }
     })
     
-    res.status(201).json(doctor)
+    res.status(201).json({ message: 'Doctor created successfully', doctor })
   } catch (error) {
+    console.error('Error creating doctor:', error)
     res.status(500).json({ message: 'Error creating doctor' })
   }
 }

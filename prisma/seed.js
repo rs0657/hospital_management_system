@@ -55,24 +55,33 @@ async function main() {
   const doctorRecord1 = await prisma.doctor.create({
     data: {
       name: 'Dr. John Smith',
-      specialty: 'Cardiology',
+      email: 'dr.john.smith@hospital.com',
       phone: '+1-555-0101',
+      specialization: 'Cardiology',
+      experience: 15,
+      qualification: 'MBBS, MD (Cardiology)',
     },
   });
 
   const doctorRecord2 = await prisma.doctor.create({
     data: {
       name: 'Dr. Sarah Johnson',
-      specialty: 'Pediatrics',
+      email: 'dr.sarah.johnson@hospital.com',
       phone: '+1-555-0102',
+      specialization: 'Pediatrics',
+      experience: 10,
+      qualification: 'MBBS, MD (Pediatrics)',
     },
   });
 
   const doctorRecord3 = await prisma.doctor.create({
     data: {
       name: 'Dr. Michael Brown',
-      specialty: 'Orthopedics',
+      email: 'dr.michael.brown@hospital.com',
       phone: '+1-555-0103',
+      specialization: 'Orthopedics',
+      experience: 12,
+      qualification: 'MBBS, MS (Orthopedics)',
     },
   });
 
@@ -80,30 +89,42 @@ async function main() {
   const patient1 = await prisma.patient.create({
     data: {
       name: 'Alice Williams',
-      dob: new Date('1985-03-15'),
-      gender: 'Female',
+      email: 'alice.williams@email.com',
       phone: '+1-555-0201',
       address: '123 Main St, City, State 12345',
+      dateOfBirth: new Date('1985-03-15'),
+      gender: 'Female',
+      bloodGroup: 'A+',
+      emergencyContact: '+1-555-0301',
+      medicalHistory: 'No known allergies, previous surgery in 2020',
     },
   });
 
   const patient2 = await prisma.patient.create({
     data: {
       name: 'Bob Johnson',
-      dob: new Date('1978-07-22'),
-      gender: 'Male',
+      email: 'bob.johnson@email.com',
       phone: '+1-555-0202',
       address: '456 Oak Ave, City, State 12345',
+      dateOfBirth: new Date('1978-07-22'),
+      gender: 'Male',
+      bloodGroup: 'B+',
+      emergencyContact: '+1-555-0302',
+      medicalHistory: 'Diabetic, takes regular medication',
     },
   });
 
   const patient3 = await prisma.patient.create({
     data: {
       name: 'Carol Davis',
-      dob: new Date('1992-11-08'),
-      gender: 'Female',
+      email: 'carol.davis@email.com',
       phone: '+1-555-0203',
       address: '789 Pine Rd, City, State 12345',
+      dateOfBirth: new Date('1992-11-08'),
+      gender: 'Female',
+      bloodGroup: 'O-',
+      emergencyContact: '+1-555-0303',
+      medicalHistory: 'Healthy, no known medical conditions',
     },
   });
 
@@ -129,10 +150,20 @@ async function main() {
   // Create prescriptions
   await prisma.prescription.create({
     data: {
-      appointmentId: appointment2.id,
-      medicineName: 'Amoxicillin',
-      dosage: '500mg',
-      duration: '7 days',
+      patientId: patient1.id,
+      doctorId: doctorRecord1.id,
+      diagnosis: 'Common Cold',
+      medications: JSON.stringify([
+        {
+          name: 'Amoxicillin',
+          dosage: '500mg',
+          frequency: 'Three times daily',
+          duration: '7 days',
+          instructions: 'Take after meals'
+        }
+      ]),
+      frequency: 'Three times daily',
+      notes: 'Rest and plenty of fluids',
     },
   });
 
