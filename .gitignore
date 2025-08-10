@@ -10,9 +10,22 @@
 .env.development.local
 .env.test.local
 .env.production.local
+.env.staging
+.env.development
+.env.production
 .env.example
 *.env
 .envrc
+
+# NextAuth.js secrets
+NEXTAUTH_SECRET*
+NEXTAUTH_URL*
+nextauth-secret*
+
+# Database connection strings
+DATABASE_URL*
+DB_CONNECTION*
+db-url*
 
 # Database files and credentials
 *.db
@@ -41,8 +54,15 @@ certificates/
 config/production.js
 config/staging.js
 config/secrets.json
+config/local.json
+config/private.json
 *.secret.json
+*.private.json
+*.config.local.*
 auth-config.json
+database-config.json
+email-config.json
+payment-config.json
 
 # ===========================================
 # DEPENDENCIES AND PACKAGES
@@ -232,13 +252,90 @@ prisma/migrations/
 !prisma/migrations/.gitkeep
 
 # ===========================================
-# CUSTOM SENSITIVE FILES
+# HEALTHCARE/MEDICAL SPECIFIC SENSITIVE FILES
 # ===========================================
 
-# Add any project-specific sensitive files here
-# Example:
-# admin-panel/
-# internal-docs/
-# client-data/
+# Patient data and medical records (HIPAA compliance)
+patient-data/
+medical-records/
+health-records/
+patient-exports/
+medical-exports/
+*.patient
+*.medical
+
+# Hospital internal documents
+internal-docs/
+admin-panel/
+staff-records/
+employee-data/
+hospital-config/
+compliance-docs/
+
+# Audit and security logs
+audit-logs/
+security-logs/
+access-logs/
+hipaa-logs/
+*.audit
+*.security
+
+# Backup and archive files
+archives/
+*.archive
+*.backup
+patient-backups/
+db-backups/
+
+# Third-party integrations (EMR, insurance, etc.)
+integrations/
+emr-data/
+insurance-data/
+billing-exports/
+*.integration
+
+# ===========================================
+# ADDITIONAL SECURITY PATTERNS
+# ===========================================
+
+# JWT and authentication secrets
+*.jwt
+jwt-secret*
+refresh-tokens/
+sessions/
+
+# API keys and tokens
+api-keys/
+tokens/
+*.token
+*.api-key
+
+# SSL/TLS certificates
+ssl/
+tls/
+certificates/
+*.p8
+*.p12
+
+# Session and cache files
+.sessions/
+cache/
+redis-dump.rdb
+
+# ===========================================
+# DEVELOPMENT AND TESTING SENSITIVE DATA
+# ===========================================
+
+# Test data with sensitive info
+test-data/sensitive/
+mock-patient-data/
+test-exports/
+*.test-sensitive
+
+# Local development overrides
+local-config/
+dev-overrides/
+*.local.js
+*.local.json
 
 .vercel
