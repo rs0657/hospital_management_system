@@ -79,11 +79,11 @@ const Navigation = () => {
             <div className="hidden md:flex items-center space-x-3">
               <div className={`w-8 h-8 bg-gradient-to-r ${roleColors[session.user.role]} rounded-full flex items-center justify-center`}>
                 <span className="text-white text-xs font-bold">
-                  {session.user.name.charAt(0)}
+                  {(session.user.name || session.user.email || 'U').charAt(0).toUpperCase()}
                 </span>
               </div>
               <div className="text-right">
-                <p className="text-sm font-semibold text-gray-900">{session.user.name}</p>
+                <p className="text-sm font-semibold text-gray-900">{session.user.name || session.user.email}</p>
                 <p className="text-xs text-gray-500 capitalize">{session.user.role}</p>
               </div>
             </div>
@@ -142,17 +142,21 @@ export default function Doctors() {
     try {
       const response = await fetch('/api/doctors')
       const data = await response.json()
-      setDoctors(data.doctors || [])
+      console.log('Doctors API response:', data) // Debug log
+      setDoctors(Array.isArray(data.doctors) ? data.doctors : [])
     } catch (error) {
       console.error('Error fetching doctors:', error)
+      setDoctors([]) // Ensure it's always an array
     } finally {
       setLoading(false)
     }
   }
 
-  const specialties = [...new Set(doctors.map(doctor => doctor.specialty))]
+  // Add safety check for doctors array
+  const doctorsArray = Array.isArray(doctors) ? doctors : []
+  const specialties = [...new Set(doctorsArray.map(doctor => doctor.specialty))]
 
-  const filteredDoctors = doctors.filter(doctor => {
+  const filteredDoctors = doctorsArray.filter(doctor => {
     const matchesSearch = doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          doctor.phone.includes(searchTerm)
     const matchesSpecialty = !specialtyFilter || doctor.specialty === specialtyFilter
@@ -257,11 +261,11 @@ export default function Doctors() {
                 <div className="flex items-center space-x-4 mb-4">
                   <div className={`w-14 h-14 bg-gradient-to-r ${getSpecialtyColor(doctor.specialty)} rounded-full flex items-center justify-center shadow-lg`}>
                     <span className="text-white font-bold text-xl">
-                      {doctor.name.charAt(0)}
+                      {(doctor.name || 'D').charAt(0).toUpperCase()}
                     </span>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900">{doctor.name}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">{doctor.name || 'Unknown Doctor'}</h3>
                     <div className="flex items-center space-x-2">
                       <span className="text-lg">{getSpecialtyIcon(doctor.specialty)}</span>
                       <p className="text-sm text-gray-600">{doctor.specialty}</p>

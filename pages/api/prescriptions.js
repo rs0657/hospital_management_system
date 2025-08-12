@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from './auth/[...nextauth]'
-import { query } from '../../lib/database'
+import { SupabaseService } from '../../lib/supabase-service'
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions)
@@ -25,49 +25,45 @@ export default async function handler(req, res) {
 
 async function getPrescriptions(req, res, session) {
   try {
-    let sqlQuery = `
-      SELECT p.*, 
-             pt.name as patient_name, pt.email as patient_email, pt.phone as patient_phone,
-             d.name as doctor_name, d.specialty as doctor_specialty, d.phone as doctor_phone
-      FROM prescriptions p
-      LEFT JOIN patients pt ON p.patient_id = pt.id
-      LEFT JOIN doctors d ON p.doctor_id = d.id
-    `
-    let params = []
+    const result = await SupabaseService.getPrescriptions()
+    
+    if (result.error) {
+      console.error('Error fetching prescriptions:', result.error)
+      return res.status(500).json({ message: 'Error fetching prescriptions' })
+    }
+    
+    let prescriptions = result.data || []
     
     // Doctors can only see their own prescriptions
     if (session.user.role === 'doctor') {
-      const doctors = await query('SELECT id FROM doctors WHERE name = $1', [session.user.name])
-      if (doctors.length > 0) {
-        sqlQuery += ' WHERE p.doctor_id = $1'
-        params = [doctors[0].id]
+      // Get doctor by email since that's how we mapped them
+      const doctorResult = await SupabaseService.getDoctorByEmail(session.user.email)
+      if (doctorResult.data) {
+        prescriptions = prescriptions.filter(p => p.doctor_id === doctorResult.data.id)
+      } else {
+        prescriptions = [] // No matching doctor found
       }
     }
 
-    sqlQuery += ' ORDER BY p.created_at DESC'
-
-    const prescriptions = await query(sqlQuery, params)
-    
     // Transform the data to match frontend expectations
     const transformedPrescriptions = prescriptions.map(presc => ({
       id: presc.id,
-      diagnosis: presc.diagnosis,
-      medications: presc.medications,
-      frequency: presc.frequency,
-      notes: presc.notes,
+      medication: presc.medication,
+      dosage: presc.dosage,
+      instructions: presc.instructions,
       created_at: presc.created_at,
       updated_at: presc.updated_at,
       patient: {
         id: presc.patient_id,
-        name: presc.patient_name,
-        email: presc.patient_email,
-        phone: presc.patient_phone
+        name: presc.patients?.name,
+        email: presc.patients?.email,
+        phone: presc.patients?.phone
       },
       doctor: {
         id: presc.doctor_id,
-        name: presc.doctor_name,
-        specialty: presc.doctor_specialty,
-        phone: presc.doctor_phone
+        name: presc.doctors?.name,
+        specialty: presc.doctors?.specialty,
+        phone: presc.doctors?.phone
       }
     }))
     
@@ -85,16 +81,16 @@ async function createPrescription(req, res, session) {
   }
 
   try {
-    const { patientId, doctorId, diagnosis, medications, frequency, notes } = req.body
+    const { patientId, doctorId, medication, dosage, instructions, medications } = req.body
     
     let finalDoctorId = doctorId
     
     // If no doctorId provided and user is a doctor, use their ID
     if (!finalDoctorId && session.user.role === 'doctor') {
-      const doctors = await query('SELECT id FROM doctors WHERE name = $1', [session.user.name])
+      const doctorResult = await SupabaseService.getDoctorByEmail(session.user.email)
       
-      if (doctors.length > 0) {
-        finalDoctorId = doctors[0].id
+      if (doctorResult.data) {
+        finalDoctorId = doctorResult.data.id
       } else {
         return res.status(400).json({ 
           message: 'Doctor profile not found. Please contact administrator.',
@@ -108,46 +104,89 @@ async function createPrescription(req, res, session) {
     
     // If doctor, verify they are creating their own prescription
     if (session.user.role === 'doctor') {
-      const doctors = await query('SELECT id FROM doctors WHERE name = $1', [session.user.name])
+      const doctorResult = await SupabaseService.getDoctorByEmail(session.user.email)
       
-      if (doctors.length > 0 && doctors[0].id !== parseInt(finalDoctorId)) {
+      if (doctorResult.data && doctorResult.data.id !== parseInt(finalDoctorId)) {
         return res.status(403).json({ message: 'Forbidden: Can only create your own prescriptions' })
       }
     }
     
-    const prescriptions = await query(
-      'INSERT INTO prescriptions (patient_id, doctor_id, diagnosis, medications, frequency, notes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [parseInt(patientId), parseInt(finalDoctorId), diagnosis, JSON.stringify(medications), frequency || 'As prescribed', notes || '']
-    )
-    
-    // Get complete prescription data
-    const fullPrescription = await query(`
-      SELECT p.*, 
-             pt.name as patient_name, pt.email as patient_email, pt.phone as patient_phone,
-             d.name as doctor_name, d.specialty as doctor_specialty, d.phone as doctor_phone
-      FROM prescriptions p
-      LEFT JOIN patients pt ON p.patient_id = pt.id
-      LEFT JOIN doctors d ON p.doctor_id = d.id
-      WHERE p.id = $1
-    `, [prescriptions[0].id])
-    
-    const transformedPrescription = {
-      ...prescriptions[0],
-      patient: {
-        id: prescriptions[0].patient_id,
-        name: fullPrescription[0].patient_name,
-        email: fullPrescription[0].patient_email,
-        phone: fullPrescription[0].patient_phone
-      },
-      doctor: {
-        id: prescriptions[0].doctor_id,
-        name: fullPrescription[0].doctor_name,
-        specialty: fullPrescription[0].doctor_specialty,
-        phone: fullPrescription[0].doctor_phone
+    // Handle multiple medications from the new form
+    if (medications && Array.isArray(medications)) {
+      const createdPrescriptions = []
+      
+      for (const med of medications) {
+        const prescriptionData = {
+          patient_id: parseInt(patientId),
+          doctor_id: parseInt(finalDoctorId),
+          medication: med.name,
+          dosage: med.dosage || 'As prescribed',
+          instructions: med.instructions || `${med.frequency || ''} ${med.duration || ''}`.trim() || ''
+        }
+        
+        const result = await SupabaseService.createPrescription(prescriptionData)
+        
+        if (result.error) {
+          console.error('Error creating prescription:', result.error)
+          return res.status(500).json({ message: 'Error creating prescription' })
+        }
+        
+        createdPrescriptions.push(result.data)
       }
+      
+      res.status(201).json({ 
+        message: `${createdPrescriptions.length} prescriptions created successfully`,
+        prescriptions: createdPrescriptions 
+      })
+    } else {
+      // Handle single medication (backward compatibility)
+      const prescriptionData = {
+        patient_id: parseInt(patientId),
+        doctor_id: parseInt(finalDoctorId),
+        medication,
+        dosage: dosage || 'As prescribed',
+        instructions: instructions || ''
+      }
+      
+      const result = await SupabaseService.createPrescription(prescriptionData)
+      
+      if (result.error) {
+        console.error('Error creating prescription:', result.error)
+        return res.status(500).json({ message: 'Error creating prescription' })
+      }
+      
+      // Get complete prescription data
+      const fullPrescriptionResult = await SupabaseService.getPrescriptionById(result.data.id)
+      
+      if (fullPrescriptionResult.error) {
+        console.error('Error fetching full prescription:', fullPrescriptionResult.error)
+        return res.status(500).json({ message: 'Error fetching prescription details' })
+      }
+      
+      const prescription = fullPrescriptionResult.data
+      const transformedPrescription = {
+        id: prescription.id,
+        medication: prescription.medication,
+        dosage: prescription.dosage,
+        instructions: prescription.instructions,
+        created_at: prescription.created_at,
+        updated_at: prescription.updated_at,
+        patient: {
+          id: prescription.patient_id,
+          name: prescription.patients?.name,
+          email: prescription.patients?.email,
+          phone: prescription.patients?.phone
+        },
+        doctor: {
+          id: prescription.doctor_id,
+          name: prescription.doctors?.name,
+          specialty: prescription.doctors?.specialty,
+          phone: prescription.doctors?.phone
+        }
+      }
+      
+      res.status(201).json(transformedPrescription)
     }
-    
-    res.status(201).json(transformedPrescription)
   } catch (error) {
     console.error('Error creating prescription:', error)
     console.error('Request body:', req.body)
@@ -168,85 +207,69 @@ async function updatePrescription(req, res, session) {
 
   try {
     const { id } = req.query
-    const { diagnosis, medications, frequency, notes } = req.body
+    const { medication, dosage, instructions } = req.body
     
     // If doctor, verify they own the prescription
     if (session.user.role === 'doctor') {
-      const doctors = await query('SELECT id FROM doctors WHERE name = $1', [session.user.name])
+      const doctorResult = await SupabaseService.getDoctorByEmail(session.user.email)
       
-      if (doctors.length > 0) {
-        const prescriptions = await query(
-          'SELECT id FROM prescriptions WHERE id = $1 AND doctor_id = $2',
-          [parseInt(id), doctors[0].id]
-        )
+      if (doctorResult.data) {
+        const prescriptionResult = await SupabaseService.getPrescriptionById(parseInt(id))
         
-        if (prescriptions.length === 0) {
+        if (prescriptionResult.data && prescriptionResult.data.doctor_id !== doctorResult.data.id) {
           return res.status(403).json({ message: 'Forbidden' })
         }
       }
     }
     
-    let updateQuery = 'UPDATE prescriptions SET updated_at = NOW()'
-    let params = []
-    let paramIndex = 1
+    const updateData = {}
     
-    if (diagnosis) {
-      updateQuery += `, diagnosis = $${paramIndex}`
-      params.push(diagnosis)
-      paramIndex++
+    if (medication) {
+      updateData.medication = medication
     }
     
-    if (medications) {
-      updateQuery += `, medications = $${paramIndex}`
-      params.push(JSON.stringify(medications))
-      paramIndex++
+    if (dosage) {
+      updateData.dosage = dosage
     }
     
-    if (frequency) {
-      updateQuery += `, frequency = $${paramIndex}`
-      params.push(frequency)
-      paramIndex++
+    if (instructions !== undefined) {
+      updateData.instructions = instructions
     }
     
-    if (notes !== undefined) {
-      updateQuery += `, notes = $${paramIndex}`
-      params.push(notes)
-      paramIndex++
-    }
+    const result = await SupabaseService.updatePrescription(parseInt(id), updateData)
     
-    updateQuery += ` WHERE id = $${paramIndex} RETURNING *`
-    params.push(parseInt(id))
-    
-    const prescriptions = await query(updateQuery, params)
-    
-    if (prescriptions.length === 0) {
-      return res.status(404).json({ message: 'Prescription not found' })
+    if (result.error) {
+      console.error('Error updating prescription:', result.error)
+      return res.status(500).json({ message: 'Error updating prescription' })
     }
     
     // Get complete prescription data
-    const fullPrescription = await query(`
-      SELECT p.*, 
-             pt.name as patient_name, pt.email as patient_email, pt.phone as patient_phone,
-             d.name as doctor_name, d.specialty as doctor_specialty, d.phone as doctor_phone
-      FROM prescriptions p
-      LEFT JOIN patients pt ON p.patient_id = pt.id
-      LEFT JOIN doctors d ON p.doctor_id = d.id
-      WHERE p.id = $1
-    `, [prescriptions[0].id])
+    const fullPrescriptionResult = await SupabaseService.getPrescriptionById(parseInt(id))
     
+    if (fullPrescriptionResult.error) {
+      console.error('Error fetching full prescription:', fullPrescriptionResult.error)
+      return res.status(500).json({ message: 'Error fetching prescription details' })
+    }
+    
+    const prescription = fullPrescriptionResult.data
     const transformedPrescription = {
-      ...prescriptions[0],
+      id: prescription.id,
+      medication: prescription.medication,
+      dosage: prescription.dosage,
+      instructions: prescription.instructions,
+      created_at: prescription.created_at,
+      updated_at: prescription.updated_at,
       patient: {
-        id: prescriptions[0].patient_id,
-        name: fullPrescription[0].patient_name,
-        email: fullPrescription[0].patient_email,
-        phone: fullPrescription[0].patient_phone
+        id: prescription.patient_id,
+        name: prescription.patients?.name,
+        email: prescription.patients?.email,
+        phone: prescription.patients?.phone
       },
       doctor: {
-        id: prescriptions[0].doctor_id,
-        name: fullPrescription[0].doctor_name,
-        specialty: fullPrescription[0].doctor_specialty,
-        phone: fullPrescription[0].doctor_phone
+        id: prescription.doctor_id,
+        name: prescription.doctors?.name,
+        specialty: prescription.doctors?.specialty,
+        phone: prescription.doctors?.phone
       }
     }
     
@@ -266,13 +289,11 @@ async function deletePrescription(req, res, session) {
   try {
     const { id } = req.query
     
-    const result = await query(
-      'DELETE FROM prescriptions WHERE id = $1 RETURNING id',
-      [parseInt(id)]
-    )
+    const result = await SupabaseService.deletePrescription(parseInt(id))
     
-    if (result.length === 0) {
-      return res.status(404).json({ message: 'Prescription not found' })
+    if (result.error) {
+      console.error('Error deleting prescription:', result.error)
+      return res.status(500).json({ message: 'Error deleting prescription' })
     }
     
     res.status(200).json({ message: 'Prescription deleted successfully' })

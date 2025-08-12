@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../auth/[...nextauth]'
-
-const prisma = new PrismaClient()
+import { SupabaseService } from '../../../lib/supabase-service'
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions)
@@ -27,19 +25,15 @@ export default async function handler(req, res) {
 
 async function getBill(req, res, id) {
   try {
-    const bill = await prisma.billing.findUnique({
-      where: { id: parseInt(id) },
-      include: {
-        patient: true
-      }
-    })
+    const result = await SupabaseService.getBillingById(id)
     
-    if (!bill) {
+    if (!result.success || !result.data) {
       return res.status(404).json({ message: 'Bill not found' })
     }
     
-    res.status(200).json(bill)
+    res.status(200).json(result.data)
   } catch (error) {
+    console.error('Error fetching bill:', error)
     res.status(500).json({ message: 'Error fetching bill' })
   }
 }
@@ -51,22 +45,42 @@ async function updateBill(req, res, session, id) {
   }
 
   try {
-    const { amount, paymentStatus, description } = req.body
+    const { amount, payment_status, paymentStatus, description } = req.body
     
     const updateData = {}
-    if (amount !== undefined) updateData.amount = parseFloat(amount)
-    if (paymentStatus) updateData.paymentStatus = paymentStatus
-    if (description !== undefined) updateData.description = description
     
-    const bill = await prisma.billing.update({
-      where: { id: parseInt(id) },
-      data: updateData,
-      include: {
-        patient: true
-      }
-    })
+    if (amount !== undefined) {
+      updateData.amount = parseFloat(amount)
+    }
     
-    res.status(200).json(bill)
+    // Handle both payment_status and paymentStatus for compatibility
+    const statusToUpdate = payment_status || paymentStatus
+    if (statusToUpdate) {
+      updateData.status = statusToUpdate
+    }
+    
+    if (description !== undefined) {
+      updateData.description = description
+    }
+    
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: 'No fields to update' })
+    }
+    
+    const result = await SupabaseService.updateBilling(parseInt(id), updateData)
+    
+    if (!result.success) {
+      return res.status(404).json({ message: 'Bill not found' })
+    }
+    
+    // Fetch and return updated bill
+    const updatedBillResult = await SupabaseService.getBillingById(parseInt(id))
+    
+    if (updatedBillResult.success && updatedBillResult.data) {
+      res.status(200).json(updatedBillResult.data)
+    } else {
+      res.status(404).json({ message: 'Bill not found' })
+    }
   } catch (error) {
     console.error('Error updating bill:', error)
     res.status(500).json({ message: 'Error updating bill' })
@@ -80,9 +94,11 @@ async function deleteBill(req, res, session, id) {
   }
 
   try {
-    await prisma.billing.delete({
-      where: { id: parseInt(id) }
-    })
+    const result = await SupabaseService.deleteBilling(parseInt(id))
+    
+    if (!result.success) {
+      return res.status(404).json({ message: 'Bill not found' })
+    }
     
     res.status(200).json({ message: 'Bill deleted successfully' })
   } catch (error) {

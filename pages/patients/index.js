@@ -79,11 +79,11 @@ const Navigation = () => {
             <div className="hidden md:flex items-center space-x-3">
               <div className={`w-8 h-8 bg-gradient-to-r ${roleColors[session.user.role]} rounded-full flex items-center justify-center`}>
                 <span className="text-white text-xs font-bold">
-                  {session.user.name.charAt(0)}
+                  {(session.user.name || session.user.email || 'U').charAt(0).toUpperCase()}
                 </span>
               </div>
               <div className="text-right">
-                <p className="text-sm font-semibold text-gray-900">{session.user.name}</p>
+                <p className="text-sm font-semibold text-gray-900">{session.user.name || session.user.email}</p>
                 <p className="text-xs text-gray-500 capitalize">{session.user.role}</p>
               </div>
             </div>
@@ -222,11 +222,11 @@ export default function Patients() {
                 <div className="flex items-center space-x-4 mb-4">
                   <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg">
                     <span className="text-white font-bold text-lg">
-                      {patient.name.charAt(0)}
+                      {(patient.name || 'P').charAt(0).toUpperCase()}
                     </span>
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{patient.name}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">{patient.name || 'Unknown Patient'}</h3>
                     <p className="text-sm text-gray-600">{patient.gender}</p>
                   </div>
                 </div>

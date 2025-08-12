@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from './[...nextauth]'
 import bcrypt from 'bcryptjs'
-import { query } from '../../../lib/database'
+import { SupabaseService } from '../../../lib/supabase-service'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

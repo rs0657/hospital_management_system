@@ -340,3 +340,44 @@ dev-overrides/
 *.local.json
 
 .vercel
+
+# ===========================================
+# SENSITIVE SCRIPTS AND TEST FILES - DO NOT COMMIT
+# ===========================================
+
+# Database setup and user management scripts (contain credentials/sensitive data)
+add-users*.js
+add-sample-*.js
+check-*.js
+fix-*.js
+update-*.js
+remove-*.js
+migrate-*.js
+verify-*.js
+generate-*.js
+
+# Testing and debugging scripts (may contain sensitive test data)
+test-*.js
+debug-*.js
+system-status.js
+
+# Password and authentication test files
+*password*.js
+*login*.js
+*auth-test*.js
+
+# ===========================================
+# DOCUMENTATION FILES - SAFE TO COMMIT
+# ===========================================
+
+# These documentation files are safe to commit (sensitive data removed)
+!SUPABASE_SETUP.md
+!SUPABASE_MIGRATION_STATUS.md
+!LOGIN_CREDENTIALS.md
+!README.md
+!DEMO_GUIDE.md
+!DEPLOYMENT_GUIDE.md
+!DEPLOYMENT.md
+!DEBUG_PATIENT_SELECTION.md
+!NEON_SETUP.md
+!PRISMA_MIGRATION_STATUS.md

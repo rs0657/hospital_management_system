@@ -82,11 +82,11 @@ const Navigation = () => {
             <div className="hidden md:flex items-center space-x-3">
               <div className={`w-8 h-8 bg-gradient-to-r ${roleColors[session.user.role]} rounded-full flex items-center justify-center`}>
                 <span className="text-white text-xs font-bold">
-                  {session.user.name.charAt(0)}
+                  {(session.user.name || session.user.email || 'U').charAt(0).toUpperCase()}
                 </span>
               </div>
               <div className="text-right">
-                <p className="text-sm font-semibold text-gray-900">{session.user.name}</p>
+                <p className="text-sm font-semibold text-gray-900">{session.user.name || session.user.email}</p>
                 <p className="text-xs text-gray-500 capitalize">{session.user.role}</p>
               </div>
             </div>

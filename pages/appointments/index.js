@@ -79,11 +79,11 @@ const Navigation = () => {
             <div className="hidden md:flex items-center space-x-3">
               <div className={`w-8 h-8 bg-gradient-to-r ${roleColors[session.user.role]} rounded-full flex items-center justify-center`}>
                 <span className="text-white text-xs font-bold">
-                  {session.user.name.charAt(0)}
+                  {(session.user.name || session.user.email || 'U').charAt(0).toUpperCase()}
                 </span>
               </div>
               <div className="text-right">
-                <p className="text-sm font-semibold text-gray-900">{session.user.name}</p>
+                <p className="text-sm font-semibold text-gray-900">{session.user.name || session.user.email}</p>
                 <p className="text-xs text-gray-500 capitalize">{session.user.role}</p>
               </div>
             </div>
@@ -152,7 +152,7 @@ export default function Appointments() {
 
   const filteredAppointments = appointments.filter(appointment => {
     const matchesStatus = !statusFilter || appointment.status === statusFilter
-    const matchesDate = !dateFilter || new Date(appointment.appointmentDate).toDateString() === new Date(dateFilter).toDateString()
+    const matchesDate = !dateFilter || new Date(appointment.date).toDateString() === new Date(dateFilter).toDateString()
     return matchesStatus && matchesDate
   })
 
@@ -289,13 +289,13 @@ export default function Appointments() {
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a4 4 0 118 0v4m-4 8a3 3 0 100-6 3 3 0 000 6z" />
                           </svg>
-                          <span>{formatDate(appointment.appointmentDate)}</span>
+                          <span>{formatDate(appointment.date)}</span>
                         </div>
                         <div className="flex items-center space-x-1 text-sm text-gray-500">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <span>{new Date(appointment.appointmentDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                          <span>{appointment.time}</span>
                         </div>
                       </div>
                     </div>

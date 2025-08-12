@@ -1,7 +1,7 @@
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
-import { query } from '../../../lib/database'
+import { SupabaseService } from '../../../lib/supabase-service'
 
 export const authOptions = {
   providers: [
@@ -16,31 +16,50 @@ export const authOptions = {
           return null
         }
 
-        const users = await query(
-          'SELECT * FROM users WHERE email = $1',
-          [credentials.email]
-        )
+        try {
+          const userResult = await SupabaseService.getUserByEmail(credentials.email)
 
-        if (users.length === 0) {
+          if (userResult.error || !userResult.data) {
+            console.log('User not found:', credentials.email)
+            return null
+          }
+
+          const user = userResult.data
+
+          const isPasswordValid = await bcrypt.compare(
+            credentials.password,
+            user.password
+          )
+
+          if (!isPasswordValid) {
+            console.log('Invalid password for:', credentials.email)
+            return null
+          }
+
+          // Get the actual name based on role
+          let displayName = user.email // default fallback
+          
+          if (user.role === 'doctor') {
+            // For doctors, get the name from the doctors table
+            const doctorResult = await SupabaseService.getDoctorByEmail(user.email)
+            if (doctorResult.data) {
+              displayName = doctorResult.data.name
+            }
+          } else if (user.role === 'admin') {
+            displayName = 'System Administrator'
+          } else if (user.role === 'receptionist') {
+            displayName = 'Hospital Receptionist'
+          }
+
+          return {
+            id: user.id.toString(),
+            email: user.email,
+            name: displayName,
+            role: user.role,
+          }
+        } catch (error) {
+          console.error('Auth error:', error)
           return null
-        }
-
-        const user = users[0]
-
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        )
-
-        if (!isPasswordValid) {
-          return null
-        }
-
-        return {
-          id: user.id.toString(),
-          email: user.email,
-          name: user.name,
-          role: user.role,
         }
       }
     })

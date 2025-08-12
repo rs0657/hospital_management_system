@@ -78,11 +78,11 @@ const Navigation = () => {
             <div className="hidden md:flex items-center space-x-3">
               <div className={`w-8 h-8 bg-gradient-to-r ${roleColors[session.user.role]} rounded-full flex items-center justify-center`}>
                 <span className="text-white text-xs font-bold">
-                  {session.user.name.charAt(0)}
+                  {(session.user.name || session.user.email || 'U').charAt(0).toUpperCase()}
                 </span>
               </div>
               <div className="text-right">
-                <p className="text-sm font-semibold text-gray-900">{session.user.name}</p>
+                <p className="text-sm font-semibold text-gray-900">{session.user.name || session.user.email}</p>
                 <p className="text-xs text-gray-500 capitalize">{session.user.role}</p>
               </div>
             </div>
@@ -234,7 +234,7 @@ export default function AppointmentDetail() {
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <div className="flex items-center justify-between">
             <div className={`px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r ${getStatusColor(appointment.status)} text-white`}>
-              {appointment.status.toUpperCase()}
+              {(appointment.status || 'scheduled').toUpperCase()}
             </div>
             
             {appointment.status === 'scheduled' && (
@@ -264,15 +264,15 @@ export default function AppointmentDetail() {
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium text-gray-500">Name</label>
-                <p className="text-lg text-gray-900">{appointment.patient.name}</p>
+                <p className="text-lg text-gray-900">{appointment.patient?.name || 'Unknown Patient'}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Phone</label>
-                <p className="text-gray-900">{appointment.patient.phone}</p>
+                <p className="text-gray-900">{appointment.patient?.phone || 'Not provided'}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Email</label>
-                <p className="text-gray-900">{appointment.patient.email || 'Not provided'}</p>
+                <p className="text-gray-900">{appointment.patient?.email || 'Not provided'}</p>
               </div>
             </div>
           </div>
@@ -283,15 +283,15 @@ export default function AppointmentDetail() {
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium text-gray-500">Name</label>
-                <p className="text-lg text-gray-900">{appointment.doctor.name}</p>
+                <p className="text-lg text-gray-900">{appointment.doctor?.name || 'Unknown Doctor'}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Specialization</label>
-                <p className="text-gray-900">{appointment.doctor.specialization}</p>
+                <p className="text-gray-900">{appointment.doctor?.specialty || 'Not specified'}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Phone</label>
-                <p className="text-gray-900">{appointment.doctor.phone}</p>
+                <p className="text-gray-900">{appointment.doctor?.phone || 'Not provided'}</p>
               </div>
             </div>
           </div>
@@ -303,11 +303,11 @@ export default function AppointmentDetail() {
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <label className="text-sm font-medium text-gray-500">Date</label>
-              <p className="text-lg text-gray-900">{formatDate(appointment.appointmentDate)}</p>
+              <p className="text-lg text-gray-900">{formatDate(appointment.date)}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-500">Time</label>
-              <p className="text-lg text-gray-900">{formatTime(appointment.appointmentDate)}</p>
+              <p className="text-lg text-gray-900">{appointment.time}</p>
             </div>
             {appointment.reason && (
               <div className="md:col-span-2">

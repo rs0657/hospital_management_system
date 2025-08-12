@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from './auth/[...nextauth]'
-import { query } from '../../lib/database'
+import { SupabaseService } from '../../lib/supabase-service'
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions)
@@ -25,28 +25,30 @@ export default async function handler(req, res) {
 
 async function getBilling(req, res, session) {
   try {
-    const billing = await query(`
-      SELECT b.*, 
-             p.name as patient_name, p.email as patient_email, p.phone as patient_phone
-      FROM billing b
-      LEFT JOIN patients p ON b.patient_id = p.id
-      ORDER BY b.date DESC
-    `)
+    const result = await SupabaseService.getBilling()
+    
+    if (result.error) {
+      console.error('Error fetching billing:', result.error)
+      return res.status(500).json({ message: 'Error fetching billing' })
+    }
+    
+    const billing = result.data || []
     
     // Transform the data to match frontend expectations
     const transformedBilling = billing.map(bill => ({
       id: bill.id,
       amount: bill.amount,
-      payment_status: bill.payment_status,
+      payment_status: bill.status,
+      paymentStatus: bill.status, // Add both formats for compatibility
       description: bill.description,
       date: bill.date,
       created_at: bill.created_at,
       updated_at: bill.updated_at,
       patient: {
         id: bill.patient_id,
-        name: bill.patient_name,
-        email: bill.patient_email,
-        phone: bill.patient_phone
+        name: bill.patients?.name,
+        email: bill.patients?.email,
+        phone: bill.patients?.phone
       }
     }))
     
@@ -66,30 +68,46 @@ async function createBill(req, res, session) {
   try {
     const { patientId, amount, paymentStatus, description, date } = req.body
     
-    const bills = await query(
-      'INSERT INTO billing (patient_id, amount, payment_status, description, date) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [parseInt(patientId), parseFloat(amount), paymentStatus || 'pending', description || '', date || new Date().toISOString().split('T')[0]]
-    )
-    
-    // Get complete bill data with patient info
-    const fullBill = await query(`
-      SELECT b.*, 
-             p.name as patient_name, p.email as patient_email, p.phone as patient_phone
-      FROM billing b
-      LEFT JOIN patients p ON b.patient_id = p.id
-      WHERE b.id = $1
-    `, [bills[0].id])
-    
-    const transformedBill = {
-      ...bills[0],
-      patient: {
-        id: bills[0].patient_id,
-        name: fullBill[0].patient_name,
-        email: fullBill[0].patient_email,
-        phone: fullBill[0].patient_phone
-      }
+    const billingData = {
+      patient_id: parseInt(patientId),
+      amount: parseFloat(amount),
+      status: paymentStatus || 'pending',
+      description: description || '',
+      date: date || new Date().toISOString().split('T')[0]
     }
     
+    const result = await SupabaseService.createBilling(billingData)
+    
+    if (result.error) {
+      console.error('Error creating billing:', result.error)
+      return res.status(500).json({ message: 'Error creating bill' })
+    }
+    
+    // Get complete bill data with patient info
+    const fullBillResult = await SupabaseService.getBillingById(result.data.id)
+    
+    if (fullBillResult.error) {
+      console.error('Error fetching full bill:', fullBillResult.error)
+      return res.status(500).json({ message: 'Error fetching bill details' })
+    }
+    
+    const bill = fullBillResult.data
+    const transformedBill = {
+      id: bill.id,
+      amount: bill.amount,
+      payment_status: bill.status,
+      description: bill.description,
+      date: bill.date,
+      created_at: bill.created_at,
+      updated_at: bill.updated_at,
+      patient: {
+        id: bill.patient_id,
+        name: bill.patients?.name,
+        email: bill.patients?.email,
+        phone: bill.patients?.phone
+      }
+    }
+
     res.status(201).json(transformedBill)
   } catch (error) {
     console.error('Error creating bill:', error)
@@ -107,47 +125,45 @@ async function updateBill(req, res, session) {
     const { id } = req.query
     const { amount, paymentStatus } = req.body
     
-    let updateQuery = 'UPDATE billing SET updated_at = NOW()'
-    let params = []
-    let paramIndex = 1
+    const updateData = {}
     
     if (amount !== undefined) {
-      updateQuery += `, amount = $${paramIndex}`
-      params.push(parseFloat(amount))
-      paramIndex++
+      updateData.amount = parseFloat(amount)
     }
     
     if (paymentStatus) {
-      updateQuery += `, payment_status = $${paramIndex}`
-      params.push(paymentStatus)
-      paramIndex++
+      updateData.status = paymentStatus
     }
     
-    updateQuery += ` WHERE id = $${paramIndex} RETURNING *`
-    params.push(parseInt(id))
+    const result = await SupabaseService.updateBilling(parseInt(id), updateData)
     
-    const bills = await query(updateQuery, params)
-    
-    if (bills.length === 0) {
-      return res.status(404).json({ message: 'Bill not found' })
+    if (result.error) {
+      console.error('Error updating billing:', result.error)
+      return res.status(500).json({ message: 'Error updating bill' })
     }
     
     // Get complete bill data
-    const fullBill = await query(`
-      SELECT b.*, 
-             p.name as patient_name, p.email as patient_email, p.phone as patient_phone
-      FROM billing b
-      LEFT JOIN patients p ON b.patient_id = p.id
-      WHERE b.id = $1
-    `, [bills[0].id])
+    const fullBillResult = await SupabaseService.getBillingById(parseInt(id))
     
+    if (fullBillResult.error) {
+      console.error('Error fetching full bill:', fullBillResult.error)
+      return res.status(500).json({ message: 'Error fetching bill details' })
+    }
+    
+    const bill = fullBillResult.data
     const transformedBill = {
-      ...bills[0],
+      id: bill.id,
+      amount: bill.amount,
+      payment_status: bill.status,
+      description: bill.description,
+      date: bill.date,
+      created_at: bill.created_at,
+      updated_at: bill.updated_at,
       patient: {
-        id: bills[0].patient_id,
-        name: fullBill[0].patient_name,
-        email: fullBill[0].patient_email,
-        phone: fullBill[0].patient_phone
+        id: bill.patient_id,
+        name: bill.patients?.name,
+        email: bill.patients?.email,
+        phone: bill.patients?.phone
       }
     }
     
@@ -167,13 +183,11 @@ async function deleteBill(req, res, session) {
   try {
     const { id } = req.query
     
-    const result = await query(
-      'DELETE FROM billing WHERE id = $1 RETURNING id',
-      [parseInt(id)]
-    )
+    const result = await SupabaseService.deleteBilling(parseInt(id))
     
-    if (result.length === 0) {
-      return res.status(404).json({ message: 'Bill not found' })
+    if (result.error) {
+      console.error('Error deleting billing:', result.error)
+      return res.status(500).json({ message: 'Error deleting bill' })
     }
     
     res.status(200).json({ message: 'Bill deleted successfully' })

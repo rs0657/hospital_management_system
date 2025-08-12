@@ -77,12 +77,11 @@ export default function AddAppointment() {
 
     try {
       // Combine date and time
-      const appointmentDateTime = new Date(`${formData.appointmentDate}T${formData.appointmentTime}`);
-      
       const appointmentData = {
         patientId: parseInt(formData.patientId),
         doctorId: parseInt(formData.doctorId),
-        appointmentDate: appointmentDateTime.toISOString(),
+        date: formData.appointmentDate, // Send date as YYYY-MM-DD
+        time: formData.appointmentTime, // Send time as HH:MM
         reason: formData.reason,
         notes: formData.notes
       };
@@ -101,7 +100,7 @@ export default function AddAppointment() {
         alert('Appointment scheduled successfully!');
         router.push('/appointments');
       } else {
-        alert(data.message || 'Error scheduling appointment');
+        alert(`Error scheduling appointment: ${data.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error:', error);

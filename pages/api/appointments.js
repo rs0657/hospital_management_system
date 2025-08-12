@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from './auth/[...nextauth]'
-import { query } from '../../lib/database'
+import { SupabaseService } from '../../lib/supabase-service'
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions)
@@ -25,30 +25,37 @@ export default async function handler(req, res) {
 
 async function getAppointments(req, res, session) {
   try {
-    let sqlQuery = `
-      SELECT a.*, 
-             p.name as patient_name, p.email as patient_email, p.phone as patient_phone,
-             p.date_of_birth as patient_dob, p.address as patient_address,
-             d.name as doctor_name, d.specialty as doctor_specialty, d.phone as doctor_phone
-      FROM appointments a
-      LEFT JOIN patients p ON a.patient_id = p.id
-      LEFT JOIN doctors d ON a.doctor_id = d.id
-    `
-    let params = []
+    let appointmentsResult
     
     // Doctors can only see their own appointments
     if (session.user.role === 'doctor') {
-      // Find doctor by user name
-      const doctors = await query('SELECT id FROM doctors WHERE name = $1', [session.user.name])
-      if (doctors.length > 0) {
-        sqlQuery += ' WHERE a.doctor_id = $1'
-        params = [doctors[0].id]
+      // Find doctor by user email
+      const doctorResult = await SupabaseService.getDoctorByEmail(session.user.email)
+      if (doctorResult.error) {
+        return res.status(500).json({ message: 'Error finding doctor' })
       }
+      
+      if (doctorResult.data) {
+        appointmentsResult = await SupabaseService.getAppointmentsByDoctor(doctorResult.data.id)
+      } else {
+        return res.status(404).json({ message: 'Doctor not found' })
+      }
+    } else {
+      appointmentsResult = await SupabaseService.getAppointments()
     }
 
-    sqlQuery += ' ORDER BY a.date ASC, a.time ASC'
-
-    const appointments = await query(sqlQuery, params)
+    if (appointmentsResult.error) {
+      console.error('Error fetching appointments:', appointmentsResult.error)
+      return res.status(500).json({ message: 'Error fetching appointments' })
+    }
+    
+    let appointments = appointmentsResult.data || []
+    
+    // Ensure appointments is always an array
+    if (!Array.isArray(appointments)) {
+      console.error('Expected appointments data to be an array, got:', typeof appointments)
+      appointments = []
+    }
     
     // Transform the data to match frontend expectations
     const transformedAppointments = appointments.map(apt => ({
@@ -56,23 +63,23 @@ async function getAppointments(req, res, session) {
       date: apt.date,
       time: apt.time,
       status: apt.status,
-      reason: apt.reason,
+      reason: apt.notes, // Map notes to reason for frontend compatibility
       notes: apt.notes,
       created_at: apt.created_at,
       updated_at: apt.updated_at,
       patient: {
         id: apt.patient_id,
-        name: apt.patient_name,
-        email: apt.patient_email,
-        phone: apt.patient_phone,
-        date_of_birth: apt.patient_dob,
-        address: apt.patient_address
+        name: apt.patients?.name,
+        email: apt.patients?.email,
+        phone: apt.patients?.phone,
+        date_of_birth: apt.patients?.date_of_birth,
+        address: apt.patients?.address
       },
       doctor: {
         id: apt.doctor_id,
-        name: apt.doctor_name,
-        specialty: apt.doctor_specialty,
-        phone: apt.doctor_phone
+        name: apt.doctors?.name,
+        specialty: apt.doctors?.specialty,
+        phone: apt.doctors?.phone
       }
     }))
     
@@ -92,35 +99,54 @@ async function createAppointment(req, res, session) {
   try {
     const { patientId, doctorId, date, time, reason, notes } = req.body
     
-    const appointments = await query(
-      'INSERT INTO appointments (patient_id, doctor_id, date, time, status, reason, notes) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [parseInt(patientId), parseInt(doctorId), date, time, 'scheduled', reason || '', notes || '']
-    )
+    // Map reason to notes if provided, otherwise use notes
+    const appointmentNotes = reason || notes || ''
+    
+    const appointmentData = {
+      patient_id: parseInt(patientId),
+      doctor_id: parseInt(doctorId),
+      date,
+      time,
+      status: 'scheduled',
+      notes: appointmentNotes
+    }
+    
+    const result = await SupabaseService.createAppointment(appointmentData)
+    
+    if (result.error) {
+      console.error('Error creating appointment:', result.error)
+      return res.status(500).json({ message: 'Error creating appointment' })
+    }
     
     // Get complete appointment data with patient and doctor info
-    const fullAppointment = await query(`
-      SELECT a.*, 
-             p.name as patient_name, p.email as patient_email, p.phone as patient_phone,
-             d.name as doctor_name, d.specialty as doctor_specialty, d.phone as doctor_phone
-      FROM appointments a
-      LEFT JOIN patients p ON a.patient_id = p.id
-      LEFT JOIN doctors d ON a.doctor_id = d.id
-      WHERE a.id = $1
-    `, [appointments[0].id])
+    const fullAppointmentResult = await SupabaseService.getAppointmentById(result.data.id)
     
+    if (fullAppointmentResult.error) {
+      console.error('Error fetching full appointment:', fullAppointmentResult.error)
+      return res.status(500).json({ message: 'Error fetching appointment details' })
+    }
+    
+    const apt = fullAppointmentResult.data
     const transformedAppointment = {
-      ...appointments[0],
+      id: apt.id,
+      date: apt.date,
+      time: apt.time,
+      status: apt.status,
+      reason: apt.notes, // Map notes to reason for frontend compatibility
+      notes: apt.notes,
+      created_at: apt.created_at,
+      updated_at: apt.updated_at,
       patient: {
-        id: appointments[0].patient_id,
-        name: fullAppointment[0].patient_name,
-        email: fullAppointment[0].patient_email,
-        phone: fullAppointment[0].patient_phone
+        id: apt.patient_id,
+        name: apt.patients?.name,
+        email: apt.patients?.email,
+        phone: apt.patients?.phone
       },
       doctor: {
-        id: appointments[0].doctor_id,
-        name: fullAppointment[0].doctor_name,
-        specialty: fullAppointment[0].doctor_specialty,
-        phone: fullAppointment[0].doctor_phone
+        id: apt.doctor_id,
+        name: apt.doctors?.name,
+        specialty: apt.doctors?.specialty,
+        phone: apt.doctors?.phone
       }
     }
     
@@ -138,77 +164,75 @@ async function updateAppointment(req, res, session) {
     // Doctors can update status, admins can update everything
     if (session.user.role === 'doctor') {
       // Verify the appointment belongs to this doctor
-      const doctors = await query('SELECT id FROM doctors WHERE name = $1', [session.user.name])
+      const doctorResult = await SupabaseService.getDoctorByEmail(session.user.email)
       
-      if (doctors.length > 0) {
-        const appointments = await query(
-          'SELECT id FROM appointments WHERE id = $1 AND doctor_id = $2',
-          [parseInt(id), doctors[0].id]
-        )
-        
-        if (appointments.length === 0) {
-          return res.status(403).json({ message: 'Forbidden' })
-        }
+      if (doctorResult.error || !doctorResult.data) {
+        return res.status(403).json({ message: 'Doctor not found' })
+      }
+      
+      const appointmentResult = await SupabaseService.getAppointmentById(parseInt(id))
+      
+      if (appointmentResult.error || !appointmentResult.data) {
+        return res.status(404).json({ message: 'Appointment not found' })
+      }
+      
+      if (appointmentResult.data.doctor_id !== doctorResult.data.id) {
+        return res.status(403).json({ message: 'Forbidden' })
       }
     } else if (!['admin', 'receptionist'].includes(session.user.role)) {
       return res.status(403).json({ message: 'Forbidden' })
     }
     
-    let updateQuery = 'UPDATE appointments SET updated_at = NOW()'
-    let params = []
-    let paramIndex = 1
+    const updateData = {}
     
     if (status) {
-      updateQuery += `, status = $${paramIndex}`
-      params.push(status)
-      paramIndex++
+      updateData.status = status
     }
     
     if (date && ['admin', 'receptionist'].includes(session.user.role)) {
-      updateQuery += `, date = $${paramIndex}`
-      params.push(date)
-      paramIndex++
+      updateData.date = date
     }
     
     if (time && ['admin', 'receptionist'].includes(session.user.role)) {
-      updateQuery += `, time = $${paramIndex}`
-      params.push(time)
-      paramIndex++
+      updateData.time = time
     }
     
-    updateQuery += ` WHERE id = $${paramIndex} RETURNING *`
-    params.push(parseInt(id))
+    const result = await SupabaseService.updateAppointment(parseInt(id), updateData)
     
-    const appointments = await query(updateQuery, params)
-    
-    if (appointments.length === 0) {
-      return res.status(404).json({ message: 'Appointment not found' })
+    if (result.error) {
+      console.error('Error updating appointment:', result.error)
+      return res.status(500).json({ message: 'Error updating appointment' })
     }
     
     // Get complete appointment data
-    const fullAppointment = await query(`
-      SELECT a.*, 
-             p.name as patient_name, p.email as patient_email, p.phone as patient_phone,
-             d.name as doctor_name, d.specialty as doctor_specialty, d.phone as doctor_phone
-      FROM appointments a
-      LEFT JOIN patients p ON a.patient_id = p.id
-      LEFT JOIN doctors d ON a.doctor_id = d.id
-      WHERE a.id = $1
-    `, [appointments[0].id])
+    const fullAppointmentResult = await SupabaseService.getAppointmentById(parseInt(id))
     
+    if (fullAppointmentResult.error) {
+      console.error('Error fetching full appointment:', fullAppointmentResult.error)
+      return res.status(500).json({ message: 'Error fetching appointment details' })
+    }
+    
+    const apt = fullAppointmentResult.data
     const transformedAppointment = {
-      ...appointments[0],
+      id: apt.id,
+      date: apt.date,
+      time: apt.time,
+      status: apt.status,
+      reason: apt.notes, // Map notes to reason for frontend compatibility
+      notes: apt.notes,
+      created_at: apt.created_at,
+      updated_at: apt.updated_at,
       patient: {
-        id: appointments[0].patient_id,
-        name: fullAppointment[0].patient_name,
-        email: fullAppointment[0].patient_email,
-        phone: fullAppointment[0].patient_phone
+        id: apt.patient_id,
+        name: apt.patients?.name,
+        email: apt.patients?.email,
+        phone: apt.patients?.phone
       },
       doctor: {
-        id: appointments[0].doctor_id,
-        name: fullAppointment[0].doctor_name,
-        specialty: fullAppointment[0].doctor_specialty,
-        phone: fullAppointment[0].doctor_phone
+        id: apt.doctor_id,
+        name: apt.doctors?.name,
+        specialty: apt.doctors?.specialty,
+        phone: apt.doctors?.phone
       }
     }
     
@@ -228,13 +252,11 @@ async function deleteAppointment(req, res, session) {
   try {
     const { id } = req.query
     
-    const result = await query(
-      'DELETE FROM appointments WHERE id = $1 RETURNING id',
-      [parseInt(id)]
-    )
+    const result = await SupabaseService.deleteAppointment(parseInt(id))
     
-    if (result.length === 0) {
-      return res.status(404).json({ message: 'Appointment not found' })
+    if (result.error) {
+      console.error('Error deleting appointment:', result.error)
+      return res.status(500).json({ message: 'Error deleting appointment' })
     }
     
     res.status(200).json({ message: 'Appointment deleted successfully' })

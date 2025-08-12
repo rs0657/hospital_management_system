@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../auth/[...nextauth]'
-
-const prisma = new PrismaClient()
+import { SupabaseService } from '../../../lib/supabase-service'
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions)
@@ -27,26 +25,22 @@ export default async function handler(req, res) {
 
 async function getDoctor(req, res, id) {
   try {
-    const doctor = await prisma.doctor.findUnique({
-      where: { id: parseInt(id) },
-      include: {
-        appointments: {
-          include: {
-            patient: true
-          },
-          orderBy: {
-            appointmentDate: 'desc'
-          }
-        }
-      }
-    })
+    const doctorResult = await SupabaseService.getDoctorById(id)
     
-    if (!doctor) {
+    if (!doctorResult.success || !doctorResult.data) {
       return res.status(404).json({ message: 'Doctor not found' })
     }
     
+    const doctor = doctorResult.data
+    
+    // Get appointments for this doctor
+    const appointmentsResult = await SupabaseService.getAppointmentsByDoctor(id)
+    
+    doctor.appointments = appointmentsResult.success ? appointmentsResult.data || [] : []
+    
     res.status(200).json(doctor)
   } catch (error) {
+    console.error('Error fetching doctor:', error)
     res.status(500).json({ message: 'Error fetching doctor' })
   }
 }
@@ -58,22 +52,28 @@ async function updateDoctor(req, res, session, id) {
   }
 
   try {
-    const { name, email, phone, specialization, experience, qualification } = req.body
+    const { name, phone, specialty } = req.body
     
     const updateData = {}
+    
     if (name) updateData.name = name
-    if (email) updateData.email = email
     if (phone) updateData.phone = phone
-    if (specialization) updateData.specialization = specialization
-    if (experience !== undefined) updateData.experience = parseInt(experience)
-    if (qualification) updateData.qualification = qualification
+    if (specialty) updateData.specialty = specialty
     
-    const doctor = await prisma.doctor.update({
-      where: { id: parseInt(id) },
-      data: updateData
-    })
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: 'No fields to update' })
+    }
     
-    res.status(200).json(doctor)
+    const result = await SupabaseService.updateDoctor(id, updateData)
+    
+    if (!result.success) {
+      return res.status(404).json({ message: 'Doctor not found' })
+    }
+    
+    // Fetch and return updated doctor
+    const updatedDoctor = await SupabaseService.getDoctorById(id)
+    
+    res.status(200).json(updatedDoctor)
   } catch (error) {
     console.error('Error updating doctor:', error)
     res.status(500).json({ message: 'Error updating doctor' })
@@ -87,9 +87,11 @@ async function deleteDoctor(req, res, session, id) {
   }
 
   try {
-    await prisma.doctor.delete({
-      where: { id: parseInt(id) }
-    })
+    const result = await SupabaseService.deleteDoctor(id)
+    
+    if (!result.success) {
+      return res.status(404).json({ message: 'Doctor not found' })
+    }
     
     res.status(200).json({ message: 'Doctor deleted successfully' })
   } catch (error) {
