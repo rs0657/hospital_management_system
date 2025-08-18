@@ -105,4 +105,3 @@ async function deleteBill(req, res, user, id) {
     res.status(500).json({ message: 'Error deleting bill' })
   }
 }
-}
