@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useSession, signIn } from 'next-auth/react'
 import { useRouter } from 'next/router'
+import { supabase } from '../../lib/supabase'
+import { SupabaseService } from '../../lib/supabase-service'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -8,31 +9,53 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const { data: session } = useSession()
 
   useEffect(() => {
-    if (session) {
-      router.push('/')
+    // Check if user is already logged in
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        router.push('/')
+      }
     }
-  }, [session, router])
+    checkUser()
+  }, [router])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
-    const result = await signIn('credentials', {
-      email,
-      password,
-      redirect: false,
-    })
+    try {
+      // Sign in with Supabase Auth
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-    if (result?.error) {
-      setError('Invalid credentials')
-    } else {
-      router.push('/')
+      if (authError) {
+        setError('Invalid credentials')
+        setLoading(false)
+        return
+      }
+
+      if (data.user) {
+        // Get user role from custom users table
+        const userResult = await SupabaseService.getUserByEmail(email)
+        if (userResult.data) {
+          // Store user role in session or local storage for quick access
+          localStorage.setItem('userRole', userResult.data.role)
+          localStorage.setItem('userName', userResult.data.name || email)
+        }
+        
+        router.push('/')
+      }
+    } catch (error) {
+      console.error('Login error:', error)
+      setError('An error occurred during login')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (

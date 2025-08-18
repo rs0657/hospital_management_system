@@ -1,29 +1,28 @@
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from './auth/[...nextauth]'
+import { getAuthenticatedUser } from '../../lib/auth-middleware'
 import { SupabaseService } from '../../lib/supabase-service'
 
 export default async function handler(req, res) {
-  const session = await getServerSession(req, res, authOptions)
+  const user = await getAuthenticatedUser(req)
 
-  if (!session) {
+  if (!user) {
     return res.status(401).json({ message: 'Unauthorized' })
   }
 
   switch (req.method) {
     case 'GET':
-      return getBilling(req, res, session)
+      return getBilling(req, res, user)
     case 'POST':
-      return createBill(req, res, session)
+      return createBill(req, res, user)
     case 'PUT':
-      return updateBill(req, res, session)
+      return updateBill(req, res, user)
     case 'DELETE':
-      return deleteBill(req, res, session)
+      return deleteBill(req, res, user)
     default:
       return res.status(405).json({ message: 'Method not allowed' })
   }
 }
 
-async function getBilling(req, res, session) {
+async function getBilling(req, res, user) {
   try {
     const result = await SupabaseService.getBilling()
     
@@ -59,9 +58,9 @@ async function getBilling(req, res, session) {
   }
 }
 
-async function createBill(req, res, session) {
+async function createBill(req, res, user) {
   // Only admins and receptionists can create bills
-  if (!['admin', 'receptionist'].includes(session.user.role)) {
+  if (!['admin', 'receptionist'].includes(user.role)) {
     return res.status(403).json({ message: 'Forbidden' })
   }
 
@@ -115,9 +114,9 @@ async function createBill(req, res, session) {
   }
 }
 
-async function updateBill(req, res, session) {
+async function updateBill(req, res, user) {
   // Only admins and receptionists can update bills
-  if (!['admin', 'receptionist'].includes(session.user.role)) {
+  if (!['admin', 'receptionist'].includes(user.role)) {
     return res.status(403).json({ message: 'Forbidden' })
   }
 
@@ -174,9 +173,9 @@ async function updateBill(req, res, session) {
   }
 }
 
-async function deleteBill(req, res, session) {
+async function deleteBill(req, res, user) {
   // Only admins can delete bills
-  if (session.user.role !== 'admin') {
+  if (user.role !== 'admin') {
     return res.status(403).json({ message: 'Forbidden' })
   }
 
@@ -195,4 +194,5 @@ async function deleteBill(req, res, session) {
     console.error('Error deleting bill:', error)
     res.status(500).json({ message: 'Error deleting bill' })
   }
+}
 }

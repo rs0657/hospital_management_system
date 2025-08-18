@@ -1,29 +1,28 @@
 import { SupabaseService } from '../../lib/supabase-service'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from './auth/[...nextauth]'
+import { getAuthenticatedUser } from '../../lib/auth-middleware'
 
 export default async function handler(req, res) {
-  const session = await getServerSession(req, res, authOptions)
+  const user = await getAuthenticatedUser(req)
 
-  if (!session) {
+  if (!user) {
     return res.status(401).json({ message: 'Unauthorized' })
   }
 
   switch (req.method) {
     case 'GET':
-      return getPatients(req, res, session)
+      return getPatients(req, res, user)
     case 'POST':
-      return createPatient(req, res, session)
+      return createPatient(req, res, user)
     case 'PUT':
-      return updatePatient(req, res, session)
+      return updatePatient(req, res, user)
     case 'DELETE':
-      return deletePatient(req, res, session)
+      return deletePatient(req, res, user)
     default:
       return res.status(405).json({ message: 'Method not allowed' })
   }
 }
 
-async function getPatients(req, res, session) {
+async function getPatients(req, res, user) {
   try {
     const result = await SupabaseService.getPatients()
     
@@ -55,9 +54,9 @@ async function getPatients(req, res, session) {
   }
 }
 
-async function createPatient(req, res, session) {
+async function createPatient(req, res, user) {
   // Check permissions - only admin and receptionist can create patients
-  if (!['admin', 'receptionist'].includes(session.user.role)) {
+  if (!['admin', 'receptionist'].includes(user.role)) {
     return res.status(403).json({ message: 'Forbidden - insufficient permissions' })
   }
 
@@ -119,9 +118,9 @@ async function createPatient(req, res, session) {
   }
 }
 
-async function updatePatient(req, res, session) {
+async function updatePatient(req, res, user) {
   // Check permissions
-  if (!['admin', 'receptionist'].includes(session.user.role)) {
+  if (!['admin', 'receptionist'].includes(user.role)) {
     return res.status(403).json({ message: 'Forbidden - insufficient permissions' })
   }
 
@@ -176,9 +175,9 @@ async function updatePatient(req, res, session) {
   }
 }
 
-async function deletePatient(req, res, session) {
+async function deletePatient(req, res, user) {
   // Only admin can delete patients
-  if (session.user.role !== 'admin') {
+  if (user.role !== 'admin') {
     return res.status(403).json({ message: 'Forbidden - admin access required' })
   }
 
@@ -200,4 +199,5 @@ async function deletePatient(req, res, session) {
     console.error('Error deleting patient:', error)
     return res.status(500).json({ message: 'Internal server error' })
   }
+}
 }

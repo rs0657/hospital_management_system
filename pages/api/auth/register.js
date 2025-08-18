@@ -1,6 +1,5 @@
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from './[...nextauth]'
-import bcrypt from 'bcryptjs'
+import { getAuthenticatedUser } from '../../../lib/auth-middleware'
+import { supabaseAdmin } from '../../../lib/supabase'
 import { SupabaseService } from '../../../lib/supabase-service'
 
 export default async function handler(req, res) {
@@ -8,10 +7,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Method not allowed' })
   }
 
-  const session = await getServerSession(req, res, authOptions)
+  const user = await getAuthenticatedUser(req)
 
   // Only admins can register new users
-  if (!session || session.user.role !== 'admin') {
+  if (!user || user.role !== 'admin') {
     return res.status(403).json({ message: 'Forbidden' })
   }
 
@@ -26,28 +25,43 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'Invalid role' })
     }
 
-    // Check if user already exists
-    const existingUsers = await query(
-      'SELECT id FROM users WHERE email = $1',
-      [email]
-    )
+    // Check if user already exists in Supabase Auth
+    const { data: existingUser } = await supabaseAdmin.auth.admin.getUserByEmail(email)
 
-    if (existingUsers.length > 0) {
+    if (existingUser.user) {
       return res.status(400).json({ message: 'User already exists' })
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10)
+    // Create user in Supabase Auth
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true // Skip email confirmation for admin-created users
+    })
 
-    // Create user
-    const users = await query(
-      'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, created_at',
-      [name, email, hashedPassword, role]
-    )
+    if (authError) {
+      console.error('Supabase Auth error:', authError)
+      return res.status(400).json({ message: authError.message })
+    }
 
-    const user = users[0]
+    // Create user record in custom users table
+    const userResult = await SupabaseService.createUser({
+      id: authData.user.id,
+      name,
+      email,
+      role
+    })
 
-    res.status(201).json({ message: 'User created successfully', user })
+    if (userResult.error) {
+      // Rollback: delete the auth user if custom user creation fails
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
+      return res.status(500).json({ message: 'Error creating user record' })
+    }
+
+    res.status(201).json({
+      message: 'User created successfully',
+      user: userResult.data
+    })
   } catch (error) {
     console.error('Registration error:', error)
     res.status(500).json({ message: 'Error creating user' })

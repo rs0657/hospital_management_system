@@ -1,11 +1,10 @@
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '../auth/[...nextauth]'
+import { getAuthenticatedUser } from '../../../lib/auth-middleware'
 import { SupabaseService } from '../../../lib/supabase-service'
 
 export default async function handler(req, res) {
-  const session = await getServerSession(req, res, authOptions)
+  const user = await getAuthenticatedUser(req)
 
-  if (!session) {
+  if (!user) {
     return res.status(401).json({ message: 'Unauthorized' })
   }
 
@@ -15,9 +14,9 @@ export default async function handler(req, res) {
     case 'GET':
       return getPatient(req, res, id)
     case 'PUT':
-      return updatePatient(req, res, session, id)
+      return updatePatient(req, res, user, id)
     case 'DELETE':
-      return deletePatient(req, res, session, id)
+      return deletePatient(req, res, user, id)
     default:
       return res.status(405).json({ message: 'Method not allowed' })
   }
@@ -37,9 +36,9 @@ async function getPatient(req, res, id) {
     res.status(500).json({ message: 'Error fetching patient' })
   }
 }
-async function updatePatient(req, res, session, id) {
+async function updatePatient(req, res, user, id) {
   // Only admins and receptionists can update patients
-  if (!['admin', 'receptionist'].includes(session.user.role)) {
+  if (!['admin', 'receptionist'].includes(user.role)) {
     return res.status(403).json({ message: 'Forbidden' })
   }
 
@@ -73,9 +72,9 @@ async function updatePatient(req, res, session, id) {
   }
 }
 
-async function deletePatient(req, res, session, id) {
+async function deletePatient(req, res, user, id) {
   // Only admins can delete patients
-  if (session.user.role !== 'admin') {
+  if (user.role !== 'admin') {
     return res.status(403).json({ message: 'Forbidden' })
   }
 

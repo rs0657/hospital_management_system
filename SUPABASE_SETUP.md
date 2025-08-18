@@ -25,10 +25,6 @@ NEXT_PUBLIC_SUPABASE_URL="https://your-actual-project-id.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="your-actual-anon-key-here"
 SUPABASE_SERVICE_ROLE_KEY="your-actual-service-role-key-here"
 
-# NextAuth
-NEXTAUTH_SECRET="your-super-secret-key-for-development-123"
-NEXTAUTH_URL="http://localhost:3000"
-
 # Environment
 NODE_ENV="development"
 ```
@@ -40,16 +36,19 @@ NODE_ENV="development"
 3. Copy and paste the contents of `supabase-schema.sql`
 4. Run the query to create all tables and initial data
 
-## Step 5: Migrate Data from SQLite
+## Step 5: Setup Supabase Auth
+
+1. Go to Authentication > Settings in your Supabase dashboard
+2. Configure your site URL (http://localhost:3000 for development)
+3. Enable email authentication
+4. Optionally configure email templates
+
+## Step 6: Migrate Data from SQLite
 
 Run the migration script:
 ```bash
 node migrate-to-supabase.js
 ```
-
-## Step 6: Update NextAuth Configuration
-
-Update the NextAuth configuration to work with Supabase for user authentication.
 
 ## Step 7: Test the Application
 
@@ -62,7 +61,7 @@ Update the NextAuth configuration to work with Supabase for user authentication.
 
 1. **Row Level Security (RLS)**: The schema includes basic RLS policies. You may need to adjust these based on your security requirements.
 
-2. **Password Hashing**: Make sure to update the user passwords in the schema with actual bcrypt hashed passwords.
+2. **User Management**: Supabase Auth handles user creation and authentication. Custom user roles are stored in the `users` table.
 
 3. **Service Role**: The service role key has full access to your database. Keep it secure and never expose it in client-side code.
 
@@ -73,3 +72,4 @@ Update the NextAuth configuration to work with Supabase for user authentication.
 - If you get authentication errors, double-check your environment variables
 - If RLS policies are blocking requests, you may need to adjust the policies in the SQL Editor
 - Check the Supabase logs in the dashboard for detailed error messages
+- Ensure email confirmation is disabled for development or properly configured for production
